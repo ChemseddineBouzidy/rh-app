@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum Role {
+  employe
+  manager
+  rh
+  admin
+}
+
+enum EmploymentType {
+  CDI
+  CDD
+  stage
+  freelance
+}
+
+enum Status {
+  actif
+  en_conge
+  suspendu
+  archive
+}
+
+model User {
+  id             String   @id @default(uuid())
+  first_name     String
+  last_name      String
+  gender         Gender
+  email          String   @unique
+  password       String
+  birth_date     DateTime
+  national_id    String   @unique
+  phone_number   String
+  address        String
+  hire_date      DateTime
+  job_title      String
+  department     String
+  department_id  Int
+  employment_type EmploymentType
+  salaire_brut   Float
+  status         Status
+  photo          String?
+  role           Role
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  deleted_at     DateTime?
+
+  
+  managerId      String? 
+  manager        User?     @relation("ManagerToEmployees", fields: [managerId], references: [id])
+  subordonnes    User[]    @relation("ManagerToEmployees")
+}
+
+
+// managerId = ID de la personne qui est ton chef
+// manager = l’objet représentant ton chef
+// subordonnes = liste des employés dont tu es le manager
