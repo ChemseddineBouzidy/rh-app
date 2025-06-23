@@ -33,6 +33,7 @@ import {
   GraduationCap,
   DollarSign
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface NavigationItem {
   id: string;
@@ -310,18 +311,22 @@ const Dashboard = ( {children}) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
+    <div className="min-h-screen flex">
+      {/* Make the sidebar fixed with appropriate height and overflow handling */}
+      <div className="fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-10 flex flex-col">
         {/* Header */}
-        <div className="px-3 py-4 border-b border-gray-200">
+        <div className="px-3 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             {!isCollapsed && (
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                  <Building className="w-5 h-5 text-white" />
-                </div>
-                <h1 className="text-lg font-bold text-gray-900">HR CRM</h1>
+              
+                <Image
+                  src="/Bayllo.png"
+                  alt="Logo"
+                  width={102}
+                  height={42}
+                  className="hidden md:block rounded-lg items-center mx-auto"
+                />
               </div>
             )}
             <button
@@ -334,7 +339,7 @@ const Dashboard = ( {children}) => {
         </div>
 
         {/* Search Section */}
-        <div className="px-3 py-3 border-b border-gray-200/50">
+        <div className="px-3 py-3 border-b border-gray-200/50 flex-shrink-0">
           {!isCollapsed && !showSearch && (
             <button
               onClick={() => setShowSearch(true)}
@@ -477,8 +482,8 @@ const Dashboard = ( {children}) => {
           )}
         </nav>
 
-        {/* Bottom Section */}
-        <div className="px-3 py-3 border-t border-gray-200/50">
+        {/* Bottom Section - always at the bottom */}
+        <div className="px-3 py-3 border-t border-gray-200/50 flex-shrink-0 mt-auto">
           {!isCollapsed && (
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
@@ -516,7 +521,10 @@ const Dashboard = ( {children}) => {
         </div>
       </div>
 
-       {children}
+      {/* Main content area with padding to account for the fixed sidebar width */}
+      <div className="flex-1 ml-64 overflow-auto">
+        {children}
+      </div>
     </div>
   );
 };

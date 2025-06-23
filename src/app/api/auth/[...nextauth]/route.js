@@ -1,7 +1,14 @@
+
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "../../../../../generated/prisma"
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== "production") {
+  process.env.NEXTAUTH_SECRET = crypto.randomBytes(32).toString("hex");
+  console.log("✅ NEXTAUTH_SECRET généré automatiquement (développement)");
+}
 
 const prisma = new PrismaClient();
 
@@ -14,21 +21,23 @@ export const authOptions = {
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        // Chercher l'utilisateur dans la DB
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
+
         if (!user) {
           throw new Error("Email ou mot de passe invalide");
         }
 
-        // Vérifier le mot de passe avec bcrypt
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
         if (!isValid) {
           throw new Error("Email ou mot de passe invalide");
         }
 
-        // Retourner l'utilisateur sans le mot de passe
         return {
           id: user.id,
           email: user.email,
@@ -41,6 +50,7 @@ export const authOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 24 * 7, // 7 jours
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -63,7 +73,7 @@ export const authOptions = {
     },
   },
   pages: {
-    signIn: "/auth/signin", // page de connexion personnalisée (à créer)
+    signIn: "/auth/signin",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
