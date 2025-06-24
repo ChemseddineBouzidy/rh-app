@@ -1,5 +1,4 @@
-import { PrismaClient } from "../generated/prisma"
-
+import { PrismaClient } from "../generated/prisma/index.js"; // ✅
 import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
@@ -8,9 +7,21 @@ async function main() {
   const email = 'superadmin@example.com'
   const hashedPassword = await bcrypt.hash('SuperSecret123!', 10)
 
+  // Vérifie ou crée le département
+  const department = await prisma.department.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      name: 'Direction',
+      description: 'Département principal',
+    },
+  })
+
+  // Crée ou met à jour le superadmin
   await prisma.user.upsert({
     where: { email },
-    update: {}, // rien à mettre ici si tu ne veux pas modifier
+    update: {}, // ne rien modifier s'il existe
     create: {
       first_name: 'Super',
       last_name: 'Admin',
@@ -23,8 +34,7 @@ async function main() {
       address: 'Admin Street',
       hire_date: new Date(),
       job_title: 'Super Admin',
-      department: 'Administration',
-      department_id: 1,
+      department_id: department.id,
       employment_type: 'CDI',
       salaire_brut: 0,
       status: 'actif',
@@ -32,15 +42,13 @@ async function main() {
     },
   })
 
-  console.log('Superadmin upserted!')
+  console.log('✅ Superadmin seeded.')
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
+  .then(() => prisma.$disconnect())
   .catch(async (e) => {
-    console.error(e)
+    console.error('❌ Error:', e)
     await prisma.$disconnect()
     process.exit(1)
   })

@@ -51,7 +51,6 @@ model User {
   address        String
   hire_date      DateTime
   job_title      String
-  department     String
   department_id  Int
   employment_type EmploymentType
   salaire_brut   Float
@@ -66,9 +65,20 @@ model User {
   managerId      String? 
   manager        User?     @relation("ManagerToEmployees", fields: [managerId], references: [id])
   subordonnes    User[]    @relation("ManagerToEmployees")
+
+  department      Department @relation(fields: [department_id], references: [id])
+
 }
 
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
+  users       User[] // inverse relation
+}
 // managerId = ID de la personne qui est ton chef
 // manager = l’objet représentant ton chef
 // subordonnes = liste des employés dont tu es le manager

@@ -5,6 +5,8 @@ import { Dashboard } from "@/components/Layout/Dashboard";
 import { Session } from "next-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/Calendar/Calendar";
+import UsersList from "@/components/Admin/UsersList";
+import LeavesList from "@/components/Admin/LeavesList";
 
 interface CustomSession extends Session {
   user: {
@@ -69,31 +71,31 @@ export default async function AdminPage() {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">
-          <button className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20">
+          <button className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
             Dashboard
           </button>
-          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-blue-700 rounded-md text-sm font-medium hover:bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
             Employees
           </button>
-          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-blue-700 rounded-md text-sm font-medium hover:bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
             </svg>
             Leave Management
           </button>
-          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-blue-700 rounded-md text-sm font-medium hover:bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
             </svg>
             Reports
           </button>
-          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50">
+          <button className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-blue-700 rounded-md text-sm font-medium hover:bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
@@ -101,9 +103,7 @@ export default async function AdminPage() {
           </button>
         </div>
         
-        {/* Reorganized layout - Stat cards on same line and Calendar on right */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Stats cards - take up 3 columns on large screens */}
           <div className="lg:col-span-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="overflow-hidden transition-all hover:shadow-md w-full">
@@ -186,86 +186,21 @@ export default async function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              <UsersList />
+              <LeavesList />
+            </div>
           </div>
           
-          {/* Calendar Widget - takes up 1 column on large screens */}
           <div className="lg:col-span-1">
             <Calendar />
           </div>
 
-          {/* Bottom section - takes full width */}
-          <div className="col-span-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <Card className="overflow-hidden transition-all hover:shadow-md w-full">
-                <CardHeader>
-                  <div className="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-base font-medium">Monthly Budget</CardTitle>
-                    <div className="p-2.5 bg-blue-100 rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <CardDescription>Current spending vs. allocated budget</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">$24,500</div>
-                  <p className="text-xs text-green-600 flex items-center mt-2 font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
-                      <path fillRule="evenodd" d="M12.577 4.878a.75.75 0 01.919-.53l4.78 1.281a.75.75 0 01.531.919l-1.281 4.78a.75.75 0 01-1.449-.387l.81-3.022a19.407 19.407 0 00-5.594 5.203.75.75 0 01-1.139.093L7 10.06l-4.72 4.72a.75.75 0 01-1.06-1.061l5.25-5.25a.75.75 0 011.06 0l3.074 3.073a20.923 20.923 0 015.545-4.931l-3.042-.815a.75.75 0 01-.53-.919z" clipRule="evenodd" />
-                    </svg>
-                    Under budget by 4%
-                  </p>
-                  <div className="mt-5">
-                    <div className="bg-gray-100 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
-                      <div className="bg-blue-600 h-2.5 rounded-full" style={{width: '65%'}}></div>
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
-                      <span>$0</span>
-                      <span>$30,000</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="overflow-hidden transition-all hover:shadow-md w-full">
-                <CardHeader>
-                  <div className="flex flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-base font-medium">Training Completion</CardTitle>
-                    <div className="p-2.5 bg-amber-100 rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                      </svg>
-                    </div>
-                  </div>
-                  <CardDescription>Employee training progress tracker</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">78%</div>
-                  <p className="text-xs text-amber-600 flex items-center mt-2 font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 mr-1">
-                      <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clipRule="evenodd" />
-                    </svg>
-                    Needs improvement
-                  </p>
-                  <div className="mt-5">
-                    <div className="bg-gray-100 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
-                      <div className="bg-amber-500 h-2.5 rounded-full" style={{width: '78%'}}></div>
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
-                      <span>0%</span>
-                      <span>Target: 95%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+       
+         
         </div>
         
-        {/* Add more admin dashboard content here */}
       </div>
     </Dashboard>
   );

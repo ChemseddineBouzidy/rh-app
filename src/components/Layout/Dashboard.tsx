@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Home, 
   Users, 
@@ -51,8 +52,9 @@ interface NavigationItem {
   }>;
 }
 
-const Dashboard = ( {children}) => {
-  const [activeView, setActiveView] = useState('dashboard');
+const Dashboard = ({children}) => {
+  const router = useRouter();
+  const [activeView, setActiveView] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['']);
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +65,7 @@ const Dashboard = ( {children}) => {
     { 
       id: 'dashboard', 
       name: 'Dashboard', 
-      href: '/dashboard', 
+      href: '/admin', 
       icon: Home, 
       current: activeView === 'dashboard'
     },
@@ -83,13 +85,12 @@ const Dashboard = ( {children}) => {
     { 
       id: 'recruitment', 
       name: 'Recrutement', 
-      href: '/recruitment', 
+      href: '/users', 
       icon: UserPlus,
       badge: 23,
       children: [
-        { id: 'candidates', name: 'Candidats', href: '/recruitment/candidates', badge: 15 },
-        { id: 'interviews', name: 'Entretiens', href: '/recruitment/interviews', badge: 8 },
-        { id: 'offers', name: 'Offres d\'emploi', href: '/recruitment/offers' }
+        { id: 'Create ', name: 'Candidats', href: '/users', badge: 15 },
+ 
       ],
       current: activeView === 'recruitment'
     },
@@ -261,7 +262,30 @@ const Dashboard = ( {children}) => {
   };
 
   const handleNavigation = (itemId: string) => {
+    // Find the navigation item or child item by ID
+    const findItem = (items: NavigationItem[]) => {
+      for (const item of items) {
+        if (item.id === itemId) {
+          return item;
+        }
+        if (item.children) {
+          const childItem = item.children.find(child => child.id === itemId);
+          if (childItem) return childItem;
+        }
+      }
+      return null;
+    };
+
+    // Find the item to navigate to
+    const navItem = findItem(navigationData);
+    
+    // Update active state
     setActiveView(itemId);
+    
+    // Navigate to the page if we found a matching item
+    if (navItem && navItem.href) {
+      router.push(navItem.href);
+    }
   };
 
   const filteredNavigation = navigationData.filter(item => {
@@ -310,6 +334,37 @@ const Dashboard = ( {children}) => {
     );
   };
 
+  // Add this useEffect to sync the activeView with the current URL
+  useEffect(() => {
+    // Extract the current path from window.location
+    const path = window.location.pathname;
+    
+    // Find a matching navigation item
+    const findMatchingItem = () => {
+      // Check main items
+      for (const item of navigationData) {
+        if (path === item.href || path.startsWith(item.href + '/')) {
+          return item.id;
+        }
+        
+        // Check child items
+        if (item.children) {
+          for (const child of item.children) {
+            if (path === child.href || path.startsWith(child.href + '/')) {
+              return child.id;
+            }
+          }
+        }
+      }
+      
+      // Default to dashboard if no match
+      return 'dashboard';
+    };
+    
+    const matchingId = findMatchingItem();
+    setActiveView(matchingId);
+  }, []);
+  
   return (
     <div className="min-h-screen flex">
       {/* Make the sidebar fixed with appropriate height and overflow handling */}
