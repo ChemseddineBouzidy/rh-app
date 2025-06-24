@@ -232,13 +232,11 @@ const CreateEmployeePage = () => {
     
     setIsUploading(true);
     
-    // Créer une URL pour la prévisualisation
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
       setPhotoPreview(base64String);
       
-      // Important: Mettre à jour le champ de formulaire avec les données de l'image
       form.setValue('photo', base64String);
       console.log("Photo chargée avec succès:", base64String.substring(0, 50) + "...");
       setIsUploading(false);
@@ -252,10 +250,8 @@ const CreateEmployeePage = () => {
     reader.readAsDataURL(file);
   };
 
-  // Supprimer la photo avec mise à jour du formulaire
   const removePhoto = () => {
     setPhotoPreview(null);
-    // Réinitialiser également la valeur du formulaire
     form.setValue('photo', '');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -268,10 +264,8 @@ const CreateEmployeePage = () => {
       setIsSubmitting(true);
       console.log("Préparation des données du formulaire...");
       
-      // Create FormData object instead of JSON
       const formData = new FormData();
       
-      // Add all form fields to the FormData
       formData.append('first_name', data.first_name);
       formData.append('last_name', data.last_name);
       formData.append('gender', data.gender);
@@ -312,7 +306,6 @@ const CreateEmployeePage = () => {
       console.log("Envoi des données au serveur...");
       const response = await fetch('/api/users', {
         method: 'POST',
-        // Don't set Content-Type header, browser will set it automatically with boundary
         body: formData,
       });
       
@@ -320,7 +313,7 @@ const CreateEmployeePage = () => {
       
       if (response.ok) {
         console.log("Employé créé avec succès");
-        
+          
         toast.success("Employé créé avec succès", {
           description: `${data.first_name} ${data.last_name} a été ajouté à la base de données.`,
           duration: 5000,
@@ -330,13 +323,15 @@ const CreateEmployeePage = () => {
           }
         });
         
-        // Réinitialiser le formulaire après succès
         form.reset();
         setPhotoPreview(null);
+        
+        setTimeout(() => {
+          router.push('/users');
+        }, 1500); 
       } else {
         console.error("Erreur lors de la création de l'employé:", responseData);
         
-        // Traitement spécifique pour l'erreur d'email en double
         if (responseData.details && responseData.details.includes("Unique constraint failed on the fields: (`email`)")) {
           toast.error("Email déjà utilisé", {
             description: `L'adresse email "${data.email}" est déjà utilisée par un autre employé. Veuillez utiliser une adresse différente.`,
