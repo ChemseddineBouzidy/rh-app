@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { 
   Home, 
   Users, 
@@ -552,16 +553,21 @@ const Dashboard = ({children}) => {
           )}
 
           <div className="space-y-2">
-            {[
+            { [
               { name: 'Documents', icon: File, id: 'files' },
               { name: 'Paramètres', icon: Settings, id: 'settings' },
               { name: 'Système', icon: Server, id: 'system' },
-              { name: 'Déconnexion', icon: LogOut, className: 'text-red-600 hover:bg-red-50' },
+              { 
+                name: 'Déconnexion', 
+                icon: LogOut, 
+                className: 'text-red-600 hover:bg-red-50',
+                onClick: () => signOut({ callbackUrl: "/auth/signin" })
+              },
             ].map((item) => (
               <div key={item.name}>
                 {renderTooltip(item,
                   <button 
-                    onClick={() => item.id && handleNavigation(item.id)}
+                    onClick={() => item.onClick ? item.onClick() : item.id && handleNavigation(item.id)}
                     className={`${item?.className || ''} w-full flex items-center px-3 py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${
                       isCollapsed ? 'justify-center' : 'space-x-3'
                     }`}

@@ -1,7 +1,6 @@
 "use client"
-
 import { Dashboard } from '@/components/Layout/Dashboard'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -9,169 +8,334 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
-import { PlusCircle, Search } from "lucide-react"
+import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck, User } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import Link from 'next/link'
 
-// Dummy data for demonstration
-const dummyUsers = [
-  { id: 1, name: "Jean Dupont", email: "jean@example.com", status: "Active", salary: 45000, hireDate: new Date(2021, 3, 15) },
-  { id: 2, name: "Marie Claire", email: "marie@example.com", status: "Inactive", salary: 52000, hireDate: new Date(2020, 6, 22) },
-  { id: 3, name: "Pierre Martin", email: "pierre@example.com", status: "Active", salary: 48000, hireDate: new Date(2022, 1, 10) },
-  { id: 4, name: "Sophie Bernard", email: "sophie@example.com", status: "On Leave", salary: 51000, hireDate: new Date(2019, 11, 5) },
-  { id: 5, name: "Lucas Petit", email: "lucas@example.com", status: "Active", salary: 49500, hireDate: new Date(2022, 8, 17) },
-];
+type User = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  gender: string;
+  email: string;
+  password: string;
+  birth_date: string;
+  national_id: string;
+  phone_number: string;
+  address: string;
+  hire_date: string | Date;
+  job_title: string;
+  department: {
+    id: number;
+    name: string;
+  };
+  department_id: number;
+  employment_type: string;
+  salaire_brut: number;
+  status: string;
+  photo?: string;
+  role: string;
+};
 
 const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [salaryRange, setSalaryRange] = useState([40000, 60000]);
+  const [salaryRange, setSalaryRange] = useState<number[]>([0, 100000]);
+  const [minMaxSalary, setMinMaxSalary] = useState<number[]>([0, 100000]);
   const [hireDateFilter, setHireDateFilter] = useState(null);
-  
-  // Filter and search logic
-  const filteredUsers = dummyUsers.filter(user => {
-    // Search filter
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Status filter
+  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+
+        setUsers(data);
+
+        // Calculate min and max salary from user data
+        if (data && data.length > 0) {
+          // Extract all valid salary values (filter out undefined, null, NaN)
+          const salaries = data
+            .map(user => user.salaire_brut)
+            .filter(salary => salary !== undefined && salary !== null && !isNaN(salary));
+
+          if (salaries.length > 0) {
+            const minSalary = Math.floor(Math.min(...salaries));
+            const maxSalary = Math.ceil(Math.max(...salaries));
+            console.log(`Salary range from DB: ${minSalary} - ${maxSalary}`);
+            setMinMaxSalary([minSalary, maxSalary]);
+            setSalaryRange([minSalary, maxSalary]);
+          }
+        }
+
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setError("Erreur lors du chargement des utilisateurs.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = searchTerm === "" ||
+      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    let hireDate = user.hire_date;
+    if (!(hireDate instanceof Date) && hireDate) {
+      hireDate = new Date(hireDate);
+    }
+
     const matchesStatus = statusFilter === "all" || user.status === statusFilter;
-    
-    // Salary filter
-    const matchesSalary = user.salary >= salaryRange[0] && user.salary <= salaryRange[1];
-    
-    // Hire date filter
-    const matchesHireDate = !hireDateFilter || 
-      (user.hireDate.getFullYear() === hireDateFilter.getFullYear() &&
-       user.hireDate.getMonth() === hireDateFilter.getMonth() &&
-       user.hireDate.getDate() === hireDateFilter.getDate());
-    
+    const matchesSalary = user.salaire_brut >= salaryRange[0] && user.salaire_brut <= salaryRange[1];
+
+    const matchesHireDate = !hireDateFilter ||
+      (hireDate &&
+        hireDate.getFullYear() === hireDateFilter.getFullYear() &&
+        hireDate.getMonth() === hireDateFilter.getMonth() &&
+        hireDate.getDate() === hireDateFilter.getDate());
+
     return matchesSearch && matchesStatus && matchesSalary && matchesHireDate;
   });
 
-  // Handle add employee button click
   const handleAddEmployee = () => {
-    alert("Fonctionnalité d'ajout d'employé à implémenter");
+    // Redirect to the add employee page
+    window.location.href = "/users/create-employee";
+  };
+
+  const toggleFilters = () => {
+    setIsFilterExpanded(!isFilterExpanded);
+  };
+
+  // Reset all filters to default values
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setSalaryRange(minMaxSalary);
+    setHireDateFilter(null);
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
   return (
     <Dashboard>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Liste des Utilisateurs</h1>
-          <Button onClick={handleAddEmployee}>
+          <h1 className="text-3xl font-bold text-blue-500">Liste des Utilisateurs</h1>
+          <Link href="/users/create-employee">
+          <Button  className="bg-blue-500 hover:bg-blue-600" >
             <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un employé
           </Button>
+          </Link>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filtres</CardTitle>
-            <CardDescription>Affinez votre recherche d'utilisateurs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Search input */}
-              <div>
-                <Label htmlFor="search">Recherche</Label>
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Rechercher un utilisateur..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+        <Card className="mb-6 border-blue-500/20 shadow-md">
+          <CardHeader className="border-b border-blue-500/10 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-blue-500" />
+                <CardTitle className="text-blue-500 text-xl">Filtres avancés</CardTitle>
               </div>
-
-              {/* Status filter */}
-              <div>
-                <Label htmlFor="status">Statut</Label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Sélectionnez un statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous</SelectItem>
-                    <SelectItem value="Active">Actif</SelectItem>
-                    <SelectItem value="Inactive">Inactif</SelectItem>
-                    <SelectItem value="On Leave">En congé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Salary range filter */}
-              <div>
-                <Label>Salaire: {salaryRange[0]}€ - {salaryRange[1]}€</Label>
-                <Slider
-                  defaultValue={[40000, 60000]}
-                  min={30000}
-                  max={100000}
-                  step={1000}
-                  value={salaryRange}
-                  onValueChange={setSalaryRange}
-                  className="mt-6"
-                />
-              </div>
-
-              {/* Hire date filter */}
-              <div>
-                <Label htmlFor="hireDate">Date d'embauche</Label>
-                <DatePicker
-                  id="hireDate"
-                  selected={hireDateFilter}
-                  onSelect={setHireDateFilter}
-                  placeholder="Sélectionnez une date"
-                />
-              </div>
+              <Button variant="ghost" size="sm" onClick={toggleFilters}>
+                {isFilterExpanded ? "Masquer" : "Afficher"}
+              </Button>
             </div>
-          </CardContent>
+            <CardDescription>Utilisez ces options pour filtrer précisément les utilisateurs</CardDescription>
+          </CardHeader>
+
+          {isFilterExpanded && (
+            <>
+              <CardContent className="pt-6 pb-4">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-blue-500" />
+                      <Label htmlFor="search" className="font-medium">Recherche</Label>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="search"
+                        placeholder="Nom, email, poste..."
+                        className="pl-8 border-blue-500/20 focus:border-blue-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4">
+                      <Calendar className="h-4 w-4 text-blue-500" />
+                      <Label htmlFor="hireDate" className="font-medium">Date d'embauche</Label>
+                    </div>
+                    <DatePicker
+                      id="hireDate"
+                      selected={hireDateFilter}
+                      onSelect={setHireDateFilter}
+                      placeholder="Sélectionnez une date"
+                      className="border-blue-500/20 w-full"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <BadgeCheck className="h-4 w-4 text-blue-500" />
+                      <Label htmlFor="status" className="font-medium">Statut</Label>
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger id="status" className="border-blue-500/20">
+                        <SelectValue placeholder="Sélectionnez un statut" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous</SelectItem>
+                        <SelectItem value="Active">Actif</SelectItem>
+                        <SelectItem value="Inactive">Inactif</SelectItem>
+                        <SelectItem value="On Leave">En congé</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="lg:col-start-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-blue-500" />
+                      <Label className="font-medium">Salaire brut</Label>
+                    </div>
+                    <div className="px-2">
+                      <div className="flex justify-between mb-2 text-sm ">
+                        <span>{salaryRange[0].toLocaleString()}€</span>
+                        <span>{salaryRange[1].toLocaleString()}€</span>
+                      </div>
+                      <Slider
+                        min={minMaxSalary[0]}
+                        max={minMaxSalary[1]}
+                        step={100}
+                        value={salaryRange}
+                        onValueChange={setSalaryRange}
+                        className="my-4 text-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+
+              <CardFooter className=" flex justify-end">
+                <Button variant="outline" className="mr-2" onClick={resetFilters}>
+                  Réinitialiser
+                </Button>
+                <Button className="bg-blue-500 hover:bg-blue-600">
+                  Appliquer les filtres
+                </Button>
+              </CardFooter>
+            </>
+          )}
         </Card>
 
-        {/* Users table */}
-        <Table>
-          <TableCaption>Liste des utilisateurs - {filteredUsers.length} utilisateurs trouvés</TableCaption>
+        <div className="bg-blue-50 p-3 mb-4 rounded-md flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-blue-500" />
+            <span className="font-medium text-blue-800">
+              {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''} trouvé{filteredUsers.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <span className="text-sm text-blue-600">
+            {searchTerm && `Recherche: "${searchTerm}"`}
+            {statusFilter !== "all" && ` • Statut: ${statusFilter}`}
+          </span>
+        </div>
+
+        <Table className=" rounded-md shadow-sm">
           <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Nom</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Salaire</TableHead>
-              <TableHead>Date d'embauche</TableHead>
+            <TableRow className=" border-blue-500/20">
+              <TableHead className="text-black font-bold">Photo</TableHead>
+              <TableHead className="text-black font-bold">ID</TableHead>
+              <TableHead className="text-black font-bold">Nom</TableHead>
+              <TableHead className="text-black font-bold">Email</TableHead>
+              <TableHead className="text-black font-bold">Département</TableHead>
+              <TableHead className="text-black font-bold">Poste</TableHead>
+              <TableHead className="text-black font-bold">Salaire</TableHead>
+              <TableHead className="text-black font-bold">Statut</TableHead>
+              <TableHead className="text-black font-bold">Date d'embauche</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center">Chargement...</TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center text-red-500">{error}</TableCell>
+              </TableRow>
+            ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} className="hover:bg-blue-50">
+                  <TableCell>
+                    <Avatar className="h-10 w-10">
+                      {user.photo ? (
+                        <AvatarImage src={user.photo} alt={`${user.first_name} ${user.last_name}`} />
+                      ) : null}
+                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                        {getUserInitials(user.first_name, user.last_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell>{user.id}</TableCell>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.first_name} {user.last_name}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.department.name}</TableCell>
+                  <TableCell>{user.job_title}</TableCell>
+                  <TableCell>{user.salaire_brut}€</TableCell>
                   <TableCell>{user.status}</TableCell>
-                  <TableCell>{user.salary}€</TableCell>
-                  <TableCell>{format(user.hireDate, "dd MMMM yyyy", { locale: fr })}</TableCell>
+                  <TableCell>
+                    {user.hire_date
+                      ? format(user.hire_date instanceof Date
+                        ? user.hire_date
+                        : new Date(user.hire_date),
+                        "dd MMMM yyyy",
+                        { locale: fr })
+                      : "Non définie"}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Aucun utilisateur trouvé</TableCell>
+                <TableCell colSpan={9} className="text-center">Aucun utilisateur trouvé</TableCell>
               </TableRow>
             )}
           </TableBody>
+          <TableCaption>Liste complète des utilisateurs dans le système</TableCaption>
         </Table>
       </div>
     </Dashboard>
-  )
+  );
 }
 
 export default UsersPage

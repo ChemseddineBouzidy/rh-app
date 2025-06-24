@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -39,46 +36,47 @@ enum Status {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  first_name     String
-  last_name      String
-  gender         Gender
-  email          String   @unique
-  password       String
-  birth_date     DateTime
-  national_id    String   @unique
-  phone_number   String
-  address        String
-  hire_date      DateTime
-  job_title      String
-  department_id  Int
+  id              String   @id @default(uuid())
+  first_name      String
+  last_name       String
+  gender          Gender
+  email           String   @unique
+  password        String
+  birth_date      DateTime
+  national_id     String   @unique
+  phone_number    String
+  address         String
+  hire_date       DateTime
+  job_title       String
+  department_id   Int?
   employment_type EmploymentType
-  salaire_brut   Float
-  status         Status
-  photo          String?
-  role           Role
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-  deleted_at     DateTime?
+  salaire_brut    Float
+  status          Status
+  photo           String?
+  role            Role
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  deleted_at      DateTime?
 
-  
-  managerId      String? 
-  manager        User?     @relation("ManagerToEmployees", fields: [managerId], references: [id])
-  subordonnes    User[]    @relation("ManagerToEmployees")
+  // Relations
+  // managerId     String?
+  // manager       User?     @relation("ManagerToEmployees", fields: [managerId], references: [id])
+  // subordonnes   User[]    @relation("ManagerToEmployees")
 
-  department      Department @relation(fields: [department_id], references: [id])
-
+  department    Department? @relation("DepartmentUsers", fields: [department_id], references: [id])
+  departmentsLed Department[] @relation("DepartmentHead") 
 }
 
 model Department {
   id          Int      @id @default(autoincrement())
   name        String   @unique
   description String?
+
+  head_id     String?  // ID du chef du département
+  head        User?    @relation("DepartmentHead", fields: [head_id], references: [id])
+
+  users       User[]   @relation("DepartmentUsers") // employés du département
+
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
-  users       User[] // inverse relation
 }
-// managerId = ID de la personne qui est ton chef
-// manager = l’objet représentant ton chef
-// subordonnes = liste des employés dont tu es le manager

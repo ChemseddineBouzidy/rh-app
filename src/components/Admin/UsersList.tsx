@@ -23,7 +23,6 @@ type User = {
   status: string;
   photo: string;
   role: string;
-  // Keeping these for display compatibility with initial data
   initials?: string;
   position?: string;
   joinDate?: string;
@@ -39,14 +38,14 @@ export default function UsersList() {
       try {
         const response = await fetch('/api/users');
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error('La réponse du réseau n\'était pas correcte');
         }
         const data = await response.json();
         
         
         setUsers(data);
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error("Erreur lors de la récupération des utilisateurs:", error);
       }
     };
     
@@ -60,7 +59,7 @@ export default function UsersList() {
     user.hire_date?.toLowerCase().includes(searchTerm.toLowerCase()))
   ) : [];
 
-  // Add this function at the top of your component, after the useState declarations
+  // Ajouter cette fonction en haut de votre composant, après les déclarations useState
   const getAvatarColor = (name: string = "") => {
     const colors = [
       "bg-blue-500", "bg-green-500", "bg-yellow-500",
@@ -73,11 +72,11 @@ export default function UsersList() {
     return colors[charCodeSum % colors.length];
   };
 
-  // Add this function for date formatting
+  // Ajouter cette fonction pour le formatage de date
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -88,16 +87,16 @@ export default function UsersList() {
     <Card>
       <CardHeader>
         <div className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base font-medium">New Users</CardTitle>
+          <CardTitle className="text-base font-medium">Nouveaux Utilisateurs</CardTitle>
           <div className="p-2 bg-blue-100 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
           </div>
         </div>
-        <CardDescription>Recent employees who joined this month</CardDescription>
+        <CardDescription>Employés récents qui ont rejoint ce mois-ci</CardDescription>
         
-        {/* Search input for Users */}
+        {/* Champ de recherche pour les utilisateurs */}
         <div className="relative mt-3">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,7 +106,7 @@ export default function UsersList() {
           <input 
             type="search" 
             className="w-full p-2 pl-10 text-sm text-gray-900 border border-gray-200 rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white" 
-            placeholder="Search users..." 
+            placeholder="Rechercher des utilisateurs..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -118,8 +117,8 @@ export default function UsersList() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Name</th>
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Position</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Nom</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Poste</th>
                 <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Date</th>
                 <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
@@ -142,7 +141,7 @@ export default function UsersList() {
                     <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{formatDate(user.hire_date)}</td>
                     <td className="px-3 py-3">
                       <button className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-md hover:bg-blue-200 transition-colors">
-                        Details
+                        Détails
                       </button>
                     </td>
                   </tr>
@@ -150,7 +149,7 @@ export default function UsersList() {
               ) : (
                 <tr>
                   <td colSpan={4} className="px-3 py-3 text-center text-gray-500">
-                    No users found matching your search
+                    Aucun utilisateur trouvé correspondant à votre recherche
                   </td>
                 </tr>
               )}
