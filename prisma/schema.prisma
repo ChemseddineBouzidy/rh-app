@@ -80,3 +80,13 @@ model Department {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 }
+
+model leave_types {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  annual_quota Int
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}

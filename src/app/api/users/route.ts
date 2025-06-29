@@ -614,4 +614,197 @@ export const POST = async (req: Request) => {
     }
 }
 
+export const PUT = async (req: Request) => {
+    try {
+        const data = await req.json();
+        const { 
+            id, 
+            first_name, 
+            last_name, 
+            email, 
+            phone_number, 
+            address, 
+            birth_date, 
+            national_id, 
+            hire_date, 
+            job_title, 
+            department_id, 
+            employment_type, 
+            salaire_brut, 
+            status, 
+            role, 
+            gender 
+        } = data;
+
+        if (!id) {
+            return NextResponse.json(
+                { error: "ID de l'utilisateur requis" },
+                { status: 400 }
+            );
+        }
+
+        // Validate enum values
+        if (employment_type && !Object.values(EmploymentType).includes(employment_type)) {
+            return NextResponse.json(
+                { error: 'Type de contrat invalide' },
+                { status: 400 }
+            );
+        }
+
+        if (status && !Object.values(Status).includes(status)) {
+            return NextResponse.json(
+                { error: 'Statut invalide' },
+                { status: 400 }
+            );
+        }
+
+        if (gender && !Object.values(Gender).includes(gender)) {
+            return NextResponse.json(
+                { error: 'Genre invalide' },
+                { status: 400 }
+            );
+        }
+
+        if (role && !Object.values(Role).includes(role)) {
+            return NextResponse.json(
+                { error: 'Rôle invalide' },
+                { status: 400 }
+            );
+        }
+
+        const updateData: any = {
+            first_name,
+            last_name,
+            email,
+            phone_number,
+            address,
+            birth_date: birth_date ? new Date(birth_date) : undefined,
+            national_id,
+            hire_date: hire_date ? new Date(hire_date) : undefined,
+            job_title,
+            department_id: department_id || null,
+            employment_type,
+            salaire_brut: salaire_brut ? parseFloat(salaire_brut) : undefined,
+            status,
+            role,
+            gender
+        };
+
+        // Remove undefined values
+        Object.keys(updateData).forEach(key => 
+            updateData[key] === undefined && delete updateData[key]
+        );
+
+        const updatedUser = await prisma.user.update({
+            where: { id: id },
+            data: updateData,
+            include: {
+                department: true,
+            }
+        });
+
+        return NextResponse.json(
+            {
+                message: 'Utilisateur mis à jour avec succès.',
+                user: updatedUser,
+            },
+            { status: 200 }
+        );
+    } catch (error: any) {
+        console.error("Error updating user:", error);
+        
+        if (error.code === 'P2025') {
+            return NextResponse.json(
+                { error: 'Utilisateur non trouvé' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(
+            {
+                error: 'Erreur lors de la mise à jour de l\'utilisateur',
+                details: error.message || 'Erreur inconnue',
+            },
+            { status: 500 }
+        );
+    }
+};
+
+export const DELETE = async (req: Request) => {
+    try {
+        const url = new URL(req.url);
+        const id = url.searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json(
+                { error: "ID de l'utilisateur requis" },
+                { status: 400 }
+            );
+        }
+
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+            where: { id: id },
+            select: { 
+                id: true, 
+                first_name: true, 
+                last_name: true, 
+                role: true,
+                department: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        if (!existingUser) {
+            return NextResponse.json(
+                { error: 'Utilisateur non trouvé' },
+                { status: 404 }
+            );
+        }
+
+        // Prevent deletion of admin users
+        if (existingUser.role === 'admin') {
+            return NextResponse.json(
+                { error: 'Impossible de supprimer un utilisateur administrateur' },
+                { status: 403 }
+            );
+        }
+
+        // Soft delete by archiving instead of hard delete
+        const deletedUser = await prisma.user.update({
+            where: { id: id },
+            data: { 
+                status: Status.archive,
+                deleted_at: new Date()
+            }
+        });
+
+        return NextResponse.json(
+            { 
+                message: `Utilisateur ${existingUser.first_name} ${existingUser.last_name} archivé avec succès`,
+                user: deletedUser
+            },
+            { status: 200 }
+        );
+    } catch (error: any) {
+        console.error("Error deleting user:", error);
+
+        if (error.code === 'P2025') {
+            return NextResponse.json(
+                { error: 'Utilisateur non trouvé' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(
+            {
+                error: 'Erreur lors de la suppression de l\'utilisateur',
+                details: error.message || 'Erreur inconnue',
+            },
+            { status: 500 }
+        );
+    }
+};
+
 

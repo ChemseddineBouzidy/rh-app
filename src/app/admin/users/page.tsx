@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
-import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck, User } from "lucide-react"
+import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck, User, Edit, Eye, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -283,16 +283,17 @@ const UsersPage = () => {
               <TableHead className="text-black font-bold">Salaire</TableHead>
               <TableHead className="text-black font-bold">Statut</TableHead>
               <TableHead className="text-black font-bold">Date d'embauche</TableHead>
+              <TableHead className="text-black font-bold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center">Chargement...</TableCell>
+                <TableCell colSpan={10} className="text-center">Chargement...</TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-red-500">{error}</TableCell>
+                <TableCell colSpan={10} className="text-center text-red-500">{error}</TableCell>
               </TableRow>
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
@@ -323,11 +324,41 @@ const UsersPage = () => {
                         { locale: fr })
                       : "Non définie"}
                   </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                        title="Voir les détails"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Link href={`/admin/users/edit?id=${user.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                          title="Modifier l'utilisateur"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        title="Supprimer l'utilisateur"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center">Aucun utilisateur trouvé</TableCell>
+                <TableCell colSpan={10} className="text-center">Aucun utilisateur trouvé</TableCell>
               </TableRow>
             )}
           </TableBody>

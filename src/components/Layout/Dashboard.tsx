@@ -33,7 +33,8 @@ import {
   Target,
   Briefcase,
   GraduationCap,
-  DollarSign
+  DollarSign,
+  School
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -71,79 +72,24 @@ const Dashboard = ({children}) => {
       current: activeView === 'dashboard'
     },
     { 
-      id: 'employees', 
-      name: 'Employés', 
-      href: '/employees', 
-      icon: Users,
-      badge: 847,
-      children: [
-        { id: 'directory', name: 'Annuaire', href: '/employees/directory' },
-        { id: 'onboarding', name: 'Intégration', href: '/employees/onboarding', badge: 3 },
-        { id: 'evaluations', name: 'Évaluations', href: '/employees/evaluations', badge: 12 }
-      ],
-      current: activeView === 'employees'
-    },
-    { 
-      id: 'recruitment', 
-      name: 'Recrutement', 
-      href: '/users', 
+      id: 'users', 
+      name: 'Utilisateurs', 
+      href: '/admin/users', 
       icon: UserPlus,
-      badge: 23,
       children: [
-        { id: 'Create ', name: 'Candidats', href: '/users', badge: 15 },
- 
+        { id: 'users-list', name: 'Liste des Employés', href: '/admin/users' },
+        { id: 'users-create', name: 'Ajouter Employé', href: '/users/create-employee' },
       ],
-      current: activeView === 'recruitment'
+      current: activeView === 'users'
     },
     { 
-      id: 'attendance', 
-      name: 'Présences', 
-      href: '/attendance', 
-      icon: Clock,
-      current: activeView === 'attendance'
+      id: 'department', 
+      name: 'Département', 
+      href: '/admin/department', 
+      icon: School,
+      current: activeView === 'department'
     },
-    { 
-      id: 'payroll', 
-      name: 'Paie', 
-      href: '/payroll', 
-      icon: DollarSign,
-      badge: 'NEW',
-      children: [
-        { id: 'salary', name: 'Salaires', href: '/payroll/salary' },
-        { id: 'benefits', name: 'Avantages', href: '/payroll/benefits' },
-        { id: 'taxes', name: 'Charges', href: '/payroll/taxes' }
-      ],
-      current: activeView === 'payroll'
-    },
-    { 
-      id: 'performance', 
-      name: 'Performance', 
-      href: '/performance', 
-      icon: Target,
-      current: activeView === 'performance'
-    },
-    { 
-      id: 'training', 
-      name: 'Formation', 
-      href: '/training', 
-      icon: GraduationCap,
-      badge: 5,
-      current: activeView === 'training'
-    },
-    { 
-      id: 'calendar', 
-      name: 'Calendrier', 
-      href: '/calendar', 
-      icon: Calendar,
-      current: activeView === 'calendar'
-    },
-    { 
-      id: 'reports', 
-      name: 'Rapports', 
-      href: '/reports', 
-      icon: BarChart3,
-      current: activeView === 'reports'
-    }
+
   ];
 
   // Données simulées
