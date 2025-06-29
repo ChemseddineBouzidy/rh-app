@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Filter,
   Download,
-  Eye
+  Eye,
+  Calendar
 } from 'lucide-react';
 import {
   Dialog,
@@ -169,17 +170,22 @@ function DepartmentPage() {
     <Dashboard>
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Départements</h2>
-              <p className="text-gray-600">Gérez les départements de votre organisation</p>
+        <header className="bg-white border-b border-gray-200 px-6 py-4 mt-7">
+            <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900/50 p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-lg shadow-lg shadow-blue-500/30">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Départements</h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">Gérez les départements de votre organisation</p>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
-
-              <Button
+            <div className="flex items-center gap-2">
+                <Button
                 onClick={openAddModal}
                 className="flex items-center space-x-2 bg-blue-600"
               >
@@ -188,6 +194,8 @@ function DepartmentPage() {
               </Button>
             </div>
           </div>
+        </div>
+
         </header>
 
         {/* Content */}

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { 
@@ -54,7 +54,11 @@ interface NavigationItem {
   }>;
 }
 
-const Dashboard = ({children}) => {
+interface DashboardProps {
+  children: React.ReactNode;
+}
+
+const Dashboard = ({ children }: DashboardProps) => {
   const router = useRouter();
   const [activeView, setActiveView] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -63,7 +67,7 @@ const Dashboard = ({children}) => {
   const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const navigationData: NavigationItem[] = [
+  const navigationData: NavigationItem[] = useMemo(() => [
     { 
       id: 'dashboard', 
       name: 'Dashboard', 
@@ -77,10 +81,10 @@ const Dashboard = ({children}) => {
       href: '/admin/users', 
       icon: UserPlus,
       children: [
-        { id: 'users-list', name: 'Liste des Employés', href: '/admin/users' },
-        { id: 'users-create', name: 'Ajouter Employé', href: '/users/create-employee' },
+        { id: 'users-list', name: 'Liste des Employés', href: '/admin/users', current: activeView === 'users-list' },
+        { id: 'users-create', name: 'Ajouter Employé', href: '/users/create-employee', current: activeView === 'users-create' },
       ],
-      current: activeView === 'users'
+      current: activeView === 'users' || activeView === 'users-list' || activeView === 'users-create'
     },
     { 
       id: 'department', 
@@ -89,8 +93,19 @@ const Dashboard = ({children}) => {
       icon: School,
       current: activeView === 'department'
     },
+    {
+      id: 'leave',  
+      name: 'Congés',
+      href: '/admin/leave',
+      icon: Calendar,
+      children: [
+        { id: 'leave-list', name: 'Liste des types de Congés', href: '/admin/leave_types', current: activeView === 'leave-list' },
+        { id: 'leave-create', name: 'Demander Congé', href: '/leave/create-leave', current: activeView === 'leave-create' },
+      ],
+      current: activeView === 'leave' || activeView === 'leave-list' || activeView === 'leave-create'
+    },
 
-  ];
+  ], [activeView]);
 
   // Données simulées
   const stats = [
@@ -288,19 +303,25 @@ const Dashboard = ({children}) => {
     
     // Find a matching navigation item
     const findMatchingItem = () => {
-      // Check main items
+      // Check child items first for more specific matches
       for (const item of navigationData) {
-        if (path === item.href || path.startsWith(item.href + '/')) {
-          return item.id;
-        }
-        
-        // Check child items
         if (item.children) {
           for (const child of item.children) {
             if (path === child.href || path.startsWith(child.href + '/')) {
+              // Also expand the parent item when a child is active
+              setExpandedItems(prev => 
+                prev.includes(item.id) ? prev : [...prev, item.id]
+              );
               return child.id;
             }
           }
+        }
+      }
+      
+      // Then check main items
+      for (const item of navigationData) {
+        if (path === item.href || path.startsWith(item.href + '/')) {
+          return item.id;
         }
       }
       
@@ -310,7 +331,55 @@ const Dashboard = ({children}) => {
     
     const matchingId = findMatchingItem();
     setActiveView(matchingId);
-  }, []);
+  }, [navigationData]);
+
+  // Also listen to router events for route changes
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const path = window.location.pathname;
+      
+      // Find a matching navigation item
+      const findMatchingItem = () => {
+        // Check child items first for more specific matches
+        for (const item of navigationData) {
+          if (item.children) {
+            for (const child of item.children) {
+              if (path === child.href || path.startsWith(child.href + '/')) {
+                // Also expand the parent item when a child is active
+                setExpandedItems(prev => 
+                  prev.includes(item.id) ? prev : [...prev, item.id]
+                );
+                return child.id;
+              }
+            }
+          }
+        }
+        
+        // Then check main items
+        for (const item of navigationData) {
+          if (path === item.href || path.startsWith(item.href + '/')) {
+            return item.id;
+          }
+        }
+        
+        // Default to dashboard if no match
+        return 'dashboard';
+      };
+      
+      const matchingId = findMatchingItem();
+      setActiveView(matchingId);
+    };
+
+    // Call immediately
+    handleRouteChange();
+
+    // Listen for popstate events (back/forward)
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, [navigationData]);
   
   return (
     <div className="min-h-screen flex">
