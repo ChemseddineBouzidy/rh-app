@@ -367,9 +367,17 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                       <TableRow key={request.id} className="hover:bg-gray-50/50 transition-colors">
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
-                              {request.user.first_name[0]}{request.user.last_name[0]}
-                            </div>
+                            {request.user.photo ? (
+                              <img
+                                src={request.user.photo}
+                                alt={`${request.user.first_name} ${request.user.last_name}`}
+                                className="w-10 h-10 rounded-full object-cover shadow-md"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                                {request.user.first_name[0]}{request.user.last_name[0]}
+                              </div>
+                            )}
                             <div>
                               <p className="font-medium text-gray-900">
                                 {request.user.first_name} {request.user.last_name}
