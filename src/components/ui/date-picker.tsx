@@ -40,10 +40,14 @@ export function DatePicker({ selected, onSelect, placeholder = "Select a date", 
       <PopoverContent className="w-auto p-0">
         <Calendar
           mode="single"
-          selected={selected}
-          onSelect={onSelect}
+          selected={selected || undefined}
+          onSelect={(date) => onSelect(date || null)}
           initialFocus
           locale={fr}
+          showOutsideDays={false}
+          captionLayout="dropdown"
+          fromYear={1900}
+          toYear={2100}
         />
       </PopoverContent>
     </Popover>

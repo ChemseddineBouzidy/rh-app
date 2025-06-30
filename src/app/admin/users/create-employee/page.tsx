@@ -65,7 +65,8 @@ import {
 } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
-
+import type { DatePickerProps } from 'antd';
+import { DatePicker, Space } from 'antd';
 // Schéma de formulaire avec Zod (traduction française)
 const formSchema = z.object({
   first_name: z.string().min(2, { message: 'Le prénom est requis' }),
@@ -112,7 +113,9 @@ const CreateEmployeePage = () => {
   getDepartmentName()
     
   }, [])
-  
+  const onChange: DatePickerProps['onChange'] = (date, dateString) => {
+  console.log(date, dateString);
+};
   // Initialisation du formulaire
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -390,6 +393,8 @@ const CreateEmployeePage = () => {
       
       <div className="py-10 max-w-9xl px-4 sm:px-6 mx-auto">
         {/* En-tête professionnel avec dégradé */}
+          <DatePicker onChange={onChange} />
+
         <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900/50 p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
             <div className="flex items-center gap-4">
