@@ -34,6 +34,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
+import { DatePicker } from '@/components/ui/date-picker'
 import { 
   CalendarIcon, 
   UserPlus, 
@@ -65,8 +66,6 @@ import {
 } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
-import type { DatePickerProps } from 'antd';
-import { DatePicker, Space } from 'antd';
 // Schéma de formulaire avec Zod (traduction française)
 const formSchema = z.object({
   first_name: z.string().min(2, { message: 'Le prénom est requis' }),
@@ -99,7 +98,7 @@ const CreateEmployeePage = () => {
   const [isGeneratingPassword, setIsGeneratingPassword] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
   const [passwordCopied, setPasswordCopied] = useState(false)
-  const [departmentName, setDepartmentName] = useState<string | null>(null)
+  const [departmentName, setDepartmentName] = useState<Array<{id: number, name: string}> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Router for navigation after success
@@ -113,9 +112,7 @@ const CreateEmployeePage = () => {
   getDepartmentName()
     
   }, [])
-  const onChange: DatePickerProps['onChange'] = (date, dateString) => {
-  console.log(date, dateString);
-};
+
   // Initialisation du formulaire
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -330,7 +327,7 @@ const CreateEmployeePage = () => {
         setPhotoPreview(null);
         
         setTimeout(() => {
-          router.push('/users');
+          router.push('/admin/users');
         }, 1500); 
       } else {
         console.error("Erreur lors de la création de l'employé:", responseData);
@@ -393,8 +390,6 @@ const CreateEmployeePage = () => {
       
       <div className="py-10 max-w-9xl px-4 sm:px-6 mx-auto">
         {/* En-tête professionnel avec dégradé */}
-          <DatePicker onChange={onChange} />
-
         <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900/50 p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
             <div className="flex items-center gap-4">
@@ -482,38 +477,14 @@ const CreateEmployeePage = () => {
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Date de naissance</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal border-blue-500 focus:border-blue-600",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: fr })
-                              ) : (
-                                <span>Choisir une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1900-01-01")
-                            }
-                            locale={fr}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <DatePicker
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          placeholder="Choisir une date de naissance"
+                          id="birth_date"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -613,7 +584,7 @@ const CreateEmployeePage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {departmentName?.map((dept) => (
+                          {departmentName?.map((dept: {id: number, name: string}) => (
                             <SelectItem key={dept.id} value={dept.id.toString()}>
                               {dept.name}
                             </SelectItem>
@@ -655,36 +626,14 @@ const CreateEmployeePage = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Date d'embauche</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal border-blue-500 focus:border-blue-600",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: fr })
-                              ) : (
-                                <span>Choisir une date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date > new Date()}
-                            locale={fr}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <DatePicker
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          placeholder="Choisir une date d'embauche"
+                          id="hire_date"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

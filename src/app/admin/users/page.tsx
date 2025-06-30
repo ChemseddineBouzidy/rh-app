@@ -151,7 +151,7 @@ const UsersPage = () => {
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-blue-500">Liste des Employés</h1>
-          <Link href="/users/create-employee">
+          <Link href="/admin/users/create-employee">
           <Button  className="bg-blue-500 hover:bg-blue-600" >
             <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un employé
           </Button>

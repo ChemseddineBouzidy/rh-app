@@ -82,7 +82,7 @@ const Dashboard = ({ children }: DashboardProps) => {
       icon: UserPlus,
       children: [
         { id: 'users-list', name: 'Liste des Employés', href: '/admin/users', current: activeView === 'users-list' },
-        { id: 'users-create', name: 'Ajouter Employé', href: '/users/create-employee', current: activeView === 'users-create' },
+        { id: 'users-create', name: 'Ajouter Employé', href: '/admin/users/create-employee', current: activeView === 'users-create' },
       ],
       current: activeView === 'users' || activeView === 'users-list' || activeView === 'users-create'
     },
@@ -99,8 +99,9 @@ const Dashboard = ({ children }: DashboardProps) => {
       href: '/admin/leave',
       icon: Calendar,
       children: [
-        { id: 'leave-list', name: 'Liste des types de Congés', href: '/admin/leave_types', current: activeView === 'leave-list' },
-        { id: 'leave-create', name: 'Demander Congé', href: '/leave/create-leave', current: activeView === 'leave-create' },
+        { id: 'leave-list', name: 'Liste des types de Congés', href: '/admin/conges/leave_types', current: activeView === 'leave-list' },
+        { id: 'leave-create', name: 'Demander Congé', href: '/admin/conges/leave-requests/create-leave-requests', current: activeView === 'leave-create' },
+        { id: 'leave-requests', name: 'Gestion des Demandes', href: '/admin/conges/gestion-demandes', current: activeView === 'leave-requests' },
       ],
       current: activeView === 'leave' || activeView === 'leave-list' || activeView === 'leave-create'
     },

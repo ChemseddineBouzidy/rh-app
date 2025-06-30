@@ -66,6 +66,9 @@ model User {
   department    Department? @relation("DepartmentUsers", fields: [department_id], references: [id])
   departmentsLed Department[] @relation("DepartmentHead") 
   leave_balances leave_balances[] @relation("UserLeaveBalances") // soldes de congés de l'utilisateur
+
+  leaveRequests LeaveRequest[] @relation("UserLeaveRequests")
+  validatedLeaveRequests LeaveRequest[] @relation("Validator")
 }
 
 model Department {
@@ -94,6 +97,7 @@ model leave_types {
 
   // Relations
   leave_balances leave_balances[] @relation("LeaveTypeBalances")
+  leaveRequests LeaveRequest[]
 }
 model leave_balances {
   id          Int      @id @default(autoincrement())
@@ -109,4 +113,32 @@ model leave_balances {
   leave_type  leave_types @relation("LeaveTypeBalances", fields: [leave_type_id], references: [id])
 
   @@unique([user_id, leave_type_id])
+}
+
+model LeaveRequest {
+  id              Int       @id @default(autoincrement())
+  user            User      @relation("UserLeaveRequests", fields: [user_id], references: [id])
+  user_id         String
+
+  leave_type      leave_types @relation(fields: [leave_type_id], references: [id])
+  leave_type_id   Int
+
+  startDate       DateTime
+  endDate         DateTime
+
+  status          LeaveStatus @default(EN_ATTENTE)
+  reason          String
+
+  validatedBy     String?   // optionnel : FK vers User
+  validator       User?     @relation("Validator", fields: [validatedBy], references: [id])
+
+  decisionReason  String?   // optionnel si refusé
+
+  createdAt       DateTime  @default(now())
+}
+
+enum LeaveStatus {
+  EN_ATTENTE
+  APPROUVE
+  REFUSE
 }
