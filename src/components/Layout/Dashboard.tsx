@@ -569,7 +569,6 @@ const Dashboard = ({ children }: DashboardProps) => {
 
           <div className="space-y-2">
             { [
-              { name: 'Documents', icon: File, id: 'files' },
               { name: 'Paramètres', icon: Settings, id: 'settings' },
               { name: 'Système', icon: Server, id: 'system' },
               { 

@@ -65,6 +65,7 @@ model User {
 
   department    Department? @relation("DepartmentUsers", fields: [department_id], references: [id])
   departmentsLed Department[] @relation("DepartmentHead") 
+  leave_balances leave_balances[] @relation("UserLeaveBalances") // soldes de congés de l'utilisateur
 }
 
 model Department {
@@ -90,4 +91,22 @@ model leave_types {
 
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+
+  // Relations
+  leave_balances leave_balances[] @relation("LeaveTypeBalances")
+}
+model leave_balances {
+  id          Int      @id @default(autoincrement())
+  user_id     String
+  leave_type_id Int
+  balance     Int
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  user        User      @relation("UserLeaveBalances", fields: [user_id], references: [id])
+  leave_type  leave_types @relation("LeaveTypeBalances", fields: [leave_type_id], references: [id])
+
+  @@unique([user_id, leave_type_id])
 }
