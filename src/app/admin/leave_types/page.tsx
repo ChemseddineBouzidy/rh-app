@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   RefreshCw,
-  Settings
+  Settings,
+  Euro,
+  X
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -42,6 +45,7 @@ interface LeaveType {
   name: string;
   description: string | null;
   annual_quota: number;
+  remuneration: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +68,8 @@ const LeaveTypesPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    annual_quota: ''
+    annual_quota: '',
+    remuneration: false
   });
 
   // Charger les types de congé
@@ -105,7 +110,8 @@ const LeaveTypesPage = () => {
     setFormData({
       name: '',
       description: '',
-      annual_quota: ''
+      annual_quota: '',
+      remuneration: false,
     });
   };
 
@@ -121,7 +127,8 @@ const LeaveTypesPage = () => {
     setFormData({
       name: leaveType.name,
       description: leaveType.description || '',
-      annual_quota: leaveType.annual_quota.toString()
+      annual_quota: leaveType.annual_quota.toString(),
+      remuneration: leaveType.remuneration
     });
     setShowEditDialog(true);
   };
@@ -147,7 +154,8 @@ const LeaveTypesPage = () => {
         body: JSON.stringify({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
-          annual_quota: parseInt(formData.annual_quota)
+          annual_quota: parseInt(formData.annual_quota),
+          remuneration: formData.remuneration
         })
       });
 
@@ -183,7 +191,8 @@ const LeaveTypesPage = () => {
         body: JSON.stringify({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
-          annual_quota: parseInt(formData.annual_quota)
+          annual_quota: parseInt(formData.annual_quota),
+          remuneration: formData.remuneration
         })
       });
 
@@ -232,7 +241,7 @@ const LeaveTypesPage = () => {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -298,6 +307,7 @@ const LeaveTypesPage = () => {
                   <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Nom</TableHead>
                   <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Description</TableHead>
                   <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Quota Annuel</TableHead>
+                  <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Rémunération</TableHead>
                   <TableHead className="font-semibold text-gray-900 dark:text-gray-100">Date de Création</TableHead>
                   <TableHead className="font-semibold text-gray-900 dark:text-gray-100 text-right">Actions</TableHead>
                 </TableRow>
@@ -305,7 +315,7 @@ const LeaveTypesPage = () => {
               <TableBody>
                 {filteredLeaveTypes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <TableCell colSpan={6} className="text-center py-12 text-gray-500 dark:text-gray-400">
                       <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p className="text-lg font-medium mb-2">Aucun type de congé trouvé</p>
                       <p className="text-sm">
@@ -335,6 +345,21 @@ const LeaveTypesPage = () => {
                           <span className="font-medium text-blue-600 dark:text-blue-400">
                             {leaveType.annual_quota} jours
                           </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {leaveType.remuneration ? (
+                            <>
+                              <Euro className="h-4 w-4 text-green-500" />
+                              <span className="text-green-600 dark:text-green-400 font-medium">Rémunéré</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-4 w-4 text-red-500" />
+                              <span className="text-red-600 dark:text-red-400 font-medium">Non rémunéré</span>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-300">
@@ -428,6 +453,17 @@ const LeaveTypesPage = () => {
                 className="border-blue-500 focus:border-blue-600"
               />
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="add-remuneration"
+                checked={formData.remuneration}
+                onCheckedChange={(checked) => handleInputChange('remuneration', checked as boolean)}
+              />
+              <Label htmlFor="add-remuneration" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Congé rémunéré
+              </Label>
+            </div>
           </div>
 
           <DialogFooter>
@@ -507,6 +543,17 @@ const LeaveTypesPage = () => {
                 onChange={(e) => handleInputChange('annual_quota', e.target.value)}
                 className="border-blue-500 focus:border-blue-600"
               />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="edit-remuneration"
+                checked={formData.remuneration}
+                onCheckedChange={(checked) => handleInputChange('remuneration', checked as boolean)}
+              />
+              <Label htmlFor="edit-remuneration" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Congé rémunéré
+              </Label>
             </div>
           </div>
 

@@ -55,12 +55,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, annual_quota } = body;
+    const { name, description, annual_quota, remuneration } = body;
 
     // Validation des données requises
-    if (!name || annual_quota === undefined) {
+    if (!name || annual_quota === undefined || remuneration === undefined) {
       return NextResponse.json(
-        { error: 'Le nom et le quota annuel sont requis' },
+        { error: 'Le nom, le quota annuel et la rémunération sont requis' },
         { status: 400 }
       );
     }
@@ -105,7 +105,8 @@ export async function PUT(
       data: {
         name,
         description: description || null,
-        annual_quota
+        annual_quota,
+        remuneration
       }
     });
 

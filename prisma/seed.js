@@ -43,6 +43,31 @@ async function main() {
   })
 
   console.log('✅ Superadmin seeded.')
+
+  // Seed leave types
+  const leaveTypes = [
+    { id: 1, name: 'Congé annuel payé', description: 'Congé annuel standard', annual_quota: 18, remuneration: true },
+    { id: 2, name: 'Congé maladie', description: 'Congé pour maladie', annual_quota: 180, remuneration: true },
+    { id: 3, name: 'Congé maternité', description: 'Congé de maternité', annual_quota: 98, remuneration: true },
+    { id: 4, name: 'Congé paternité', description: 'Congé de paternité', annual_quota: 3, remuneration: true },
+    { id: 5, name: 'Mariage salarié', description: 'Congé pour mariage du salarié', annual_quota: 4, remuneration: true },
+    { id: 6, name: 'Mariage enfant', description: 'Congé pour mariage d\'un enfant', annual_quota: 2, remuneration: true },
+    { id: 7, name: 'Décès (parent proche)', description: 'Congé de deuil pour parent proche', annual_quota: 3, remuneration: true },
+    { id: 8, name: 'Circoncision d\'un enfant', description: 'Congé pour circoncision d\'un enfant', annual_quota: 2, remuneration: true },
+    { id: 9, name: 'Congé pour examen', description: 'Congé pour passer un examen', annual_quota: 0, remuneration: false },
+    { id: 10, name: 'Congé sans solde', description: 'Congé non rémunéré', annual_quota: 0, remuneration: false },
+    { id: 11, name: 'Congé sabbatique', description: 'Congé sabbatique de longue durée', annual_quota: 365, remuneration: false },
+  ]
+
+  for (const leaveType of leaveTypes) {
+    await prisma.leave_types.upsert({
+      where: { id: leaveType.id },
+      update: {},
+      create: leaveType,
+    })
+  }
+
+  console.log('✅ Leave types seeded.')
 }
 
 main()
