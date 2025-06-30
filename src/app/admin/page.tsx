@@ -25,10 +25,11 @@ export default async function AdminPage() {
   
   const Session = session as CustomSession;
 
-  if (!Session || Session.user.role !== "admin") {
-    redirect("/auth/signin");
-  }
-  console.log("Session:", Session);
+  // if (!Session || Session.user.role !== "admin") {
+  //   // redirect("/auth/signin");
+  //       redirect("/unauthorized");
+  // }
+  // console.log("Session:", Session);
   
   return (
     <Dashboard>

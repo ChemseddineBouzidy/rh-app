@@ -142,7 +142,7 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
   const handleDecision = async (requestId: string, decision: 'APPROVED' | 'REFUSE') => {
     setIsProcessing(true);
     try {
-      // Appel API PATCH pour mettre à jour le statut et la raison
+    
       const res = await fetch("/api/leaveRequests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -164,7 +164,7 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
           request.id === requestId 
             ? { 
                 ...request, 
-                status: updated.status, // update with value from API
+                status: updated.status, 
                 validatedBy: updated.validatedBy,
                 decisionReason: updated.decisionReason
               }
@@ -223,7 +223,7 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
 
   return (
     <Dashboard>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 px-4 mt-9 sm:px-6 lg:px-8">
         <div className="max-w-8xl mx-auto">
     {/* En-tête */}
         <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900/50 p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm">

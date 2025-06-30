@@ -1,112 +1,123 @@
-import { getServerSession } from "next-auth";
+import { getServerSession, signOut } from "next-auth";
 import Image from "next/image";
+import Link from "next/link";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 
 export default async function Home() {
-   const session = await getServerSession(authOptions as any);
-    
-    const Session = session as any;
-  
-    if (!Session || Session.user.role !== "admin") {
-      redirect("/auth/signin");
-    }
-    console.log("Session:", Session);
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx {Session.user.id} 
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const session = await getServerSession(authOptions as any);
+  const Session = session as any;
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Navbar */}
+      <nav className="w-full flex items-center justify-between px-8 py-4 bg-white dark:bg-gray-800 shadow">
+        <div className="flex items-center gap-4">
+          <span className="text-2xl font-extrabold text-blue-700 tracking-wide">
+            BAYLLO
+          </span>
+        </div>
+        <div className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="text-gray-700 dark:text-gray-200 hover:underline"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Accueil
+          </Link>
+          <Link
+            href="/profile"
+            className="text-gray-700 dark:text-gray-200 hover:underline"
           >
-            Read our docs
-          </a>
+            Mon profil
+          </Link>
+          <Link
+            href="/employees"
+            className="text-gray-700 dark:text-gray-200 hover:underline"
+          >
+            Employés
+          </Link>
+          <Link
+            href="/requests"
+            className="text-gray-700 dark:text-gray-200 hover:underline"
+          >
+            Mes demandes
+          </Link>
+          <form action="/api/auth/signout" method="POST">
+            <button
+              type="submit"
+              className="ml-4 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+            >
+              Déconnexion
+            </button>
+          </form>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="flex flex-col items-center justify-center flex-1 py-16 px-4 bg-gradient-to-b from-blue-50 to-transparent dark:from-gray-800">
+        <h1 className="text-4xl sm:text-5xl font-bold text-blue-700 mb-4 text-center">
+          Bienvenue{Session?.user?.name ? `, ${Session.user.name}` : ""} !
+        </h1>
+        <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 text-center max-w-2xl">
+          BAYLLO, votre solution RH moderne pour gérer vos employés, demandes et
+          informations personnelles en toute simplicité.
+        </p>
+        <div className="flex gap-4">
+          <Link
+            href="/employees"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+          >
+            Voir les employés
+          </Link>
+          <Link
+            href="/profile"
+            className="px-6 py-3 bg-white border border-blue-600 text-blue-700 rounded-lg font-semibold hover:bg-blue-50 dark:bg-gray-900 dark:border-blue-400 dark:text-blue-300 transition"
+          >
+            Mon profil
+          </Link>
+        </div>
+      </section>
+
+      {/* Main content */}
+      <main className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8 flex flex-col gap-6 mb-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">
+            Navigation rapide
+          </h2>
+          <ul className="space-y-2">
+            <li>
+              <Link
+                href="/profile"
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Mon profil
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/employees"
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Liste des employés
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/requests"
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
+                Mes demandes
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div className="mt-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Pour toute question, contactez l'administrateur RH.
+          </p>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      <footer className="mt-auto py-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+        &copy; {new Date().getFullYear()} BAYLLO. Tous droits réservés.
       </footer>
     </div>
   );

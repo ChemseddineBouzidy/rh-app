@@ -3,7 +3,6 @@ import { PrismaClient, LeaveStatus } from '../../../../generated/prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET all leave requests
 export async function GET() {
   try {
     const leaveRequests = await prisma.leaveRequest.findMany({
@@ -19,7 +18,6 @@ export async function GET() {
   }
 }
 
-// POST create a new leave request
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
@@ -41,7 +39,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT update a leave request
 export async function PUT(req: NextRequest) {
   try {
     const data = await req.json();
@@ -64,7 +61,6 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE a leave request
 export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json();
@@ -75,7 +71,6 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// PATCH update the status of a leave request
 export async function PATCH(req: NextRequest) {
   try { 
     const data = await req.json();

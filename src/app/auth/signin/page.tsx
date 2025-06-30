@@ -36,8 +36,28 @@ export default function SignInPage() {
     if (res?.error) {
       setError("Email ou mot de passe invalide");
     } else {
+       const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      const role = session?.user?.role;
+
+      switch (role) {
+        case "admin":
+          router.push("/admin");
+          break;
+        case "employe":
+          router.push("/employe");
+          break;
+        case "rh":
+          router.push("/rh");
+          break;
+        case "manager":
+          router.push("/manager");
+          break;
+        default:
+          router.push("/");
+      }
       // Redirection après connexion réussie
-      router.push("/admin");
+      // router.push("/admin");
     }
     
     setIsLoading(false);
