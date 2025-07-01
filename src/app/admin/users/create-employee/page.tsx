@@ -332,17 +332,35 @@ const CreateEmployeePage = () => {
       } else {
         console.error("Erreur lors de la création de l'employé:", responseData);
         
-        if (responseData.details && responseData.details.includes("Unique constraint failed on the fields: (`email`)")) {
-          toast.error("Email déjà utilisé", {
-            description: `L'adresse email "${data.email}" est déjà utilisée par un autre employé. Veuillez utiliser une adresse différente.`,
-            duration: 8000,
-          });
-          
-          // Met en évidence le champ email avec une erreur
-          form.setError("email", { 
-            type: "manual", 
-            message: "Cette adresse email est déjà utilisée"
-          });
+        // Handle unique constraint errors more comprehensively
+        if (responseData.details) {
+          if (responseData.details.includes("Unique constraint failed on the fields: (`email`)")) {
+            toast.error("Email déjà utilisé", {
+              description: `L'adresse email "${data.email}" est déjà utilisée par un autre employé. Veuillez utiliser une adresse différente.`,
+              duration: 8000,
+            });
+            
+            form.setError("email", { 
+              type: "manual", 
+              message: "Cette adresse email est déjà utilisée"
+            });
+          } else if (responseData.details.includes("Unique constraint failed on the fields: (`national_id`)")) {
+            toast.error("Carte d'identité déjà utilisée", {
+              description: `Le numéro de carte d'identité "${data.national_id}" est déjà utilisé par un autre employé. Veuillez vérifier le numéro.`,
+              duration: 8000,
+            });
+            
+            form.setError("national_id", { 
+              type: "manual", 
+              message: "Ce numéro de carte d'identité est déjà utilisé"
+            });
+          } else {
+            // Generic unique constraint error
+            toast.error("Données en conflit", {
+              description: "Certaines informations sont déjà utilisées par un autre employé. Veuillez vérifier vos données.",
+              duration: 8000,
+            });
+          }
         } else {
           toast.error("Erreur lors de la création", {
             description: responseData.message || responseData.error || "Une erreur est survenue lors de la création de l'employé",
@@ -895,7 +913,7 @@ const CreateEmployeePage = () => {
                           <SelectItem value="employe">Employé</SelectItem>
                           <SelectItem value="manager">Manager</SelectItem>
                           <SelectItem value="rh">RH</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          {/* <SelectItem value="admin">Admin</SelectItem> */}
                         </SelectContent>
                       </Select>
                       <FormMessage />
