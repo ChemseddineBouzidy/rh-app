@@ -120,7 +120,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
 
   return (
     <Dashboard>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 max-w-9xl">
+      <div className="sm:px-6 lg:px-8 py-6 lg:py-10 max-w-9xl">
         <Toaster position="top-right" richColors />
 
     {/* En-tête */}
@@ -154,32 +154,32 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                     <h3 className="text-lg font-semibold text-gray-900">Informations générales</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                     <FormField
                       control={form.control}
                       name="user_id"
                       render={({ field }) => (
-                        <FormItem className="space-y-3">
+                        <FormItem className="space-y-3 w-full">
                           <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Employé
                           </FormLabel>
-                          <FormControl>
+                          <FormControl className="w-full">
                             <Select
                               value={field.value}
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
-                              <SelectTrigger className="h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                              <SelectTrigger className="w-full h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
                                 <SelectValue placeholder="Sélectionner un employé" />
                               </SelectTrigger>
-                              <SelectContent className="max-h-80 rounded-lg shadow-2xl border-gray-100">
+                              <SelectContent className="max-h-80     rounded-lg shadow-2xl border-gray-100">
                                 <div className="p-3 sticky top-0 bg-white z-10 border-b border-gray-100">
                                   <Input
                                     placeholder="Rechercher un employé..."
                                     value={userSearch}
                                     onChange={e => setUserSearch(e.target.value)}
-                                    className="h-9 border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                    className="w-full h-9 border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
                                   />
                                 </div>
                                 <div className="p-1">
@@ -221,18 +221,18 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                       control={form.control}
                       name="leave_type_id"
                       render={({ field }) => (
-                        <FormItem className="space-y-3">
+                        <FormItem className="space-y-3 w-full">
                           <FormLabel className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                             <Clock className="w-4 h-4" />
                             Type de congé
                           </FormLabel>
-                          <FormControl>
+                          <FormControl className="w-full">
                       <Select
                               value={field.value}
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
-                              <SelectTrigger className="h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                              <SelectTrigger className="w-full h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
                                 <SelectValue placeholder="Sélectionner un type de congé">
                                   {field.value && leaveTypes.find(type => type.id.toString() === field.value)?.name}
                                 </SelectValue>
@@ -243,7 +243,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                                     placeholder="Rechercher un type..."
                                     value={leaveTypeSearch}
                                     onChange={e => setLeaveTypeSearch(e.target.value)}
-                                    className="h-9 border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                    className="w-full h-9 border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
                                   />
                                 </div>
                                 <div className="p-1">
@@ -312,7 +312,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                           Dates de début et fin
                         </FormLabel>
                         <FormControl>
-                          <div className="w-full max-w-md">
+                          <div className="w-full">
                             <Space direction="vertical" size={12} className="w-full">
                               <DatePicker.RangePicker
                                 className="w-full h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500"
@@ -351,7 +351,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                           <Textarea
                             placeholder="Décrivez le motif de votre demande de congé..."
                             {...field}
-                            className="min-h-[120px] rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 resize-none"
+                            className="w-full min-h-[120px] rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 resize-none"
                           />
                         </FormControl>
                         <FormMessage className="text-xs" />
@@ -371,7 +371,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                           <Input
                             placeholder="Commentaire ou note administrative..."
                             {...field}
-                            className="h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
+                            className="w-full h-12 rounded-lg border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                           />
                         </FormControl>
                         <FormMessage className="text-xs" />
