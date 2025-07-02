@@ -54,9 +54,9 @@ async function main() {
     { id: 6, name: 'Mariage enfant', description: 'Congé pour mariage d\'un enfant', annual_quota: 2, remuneration: true },
     { id: 7, name: 'Décès (parent proche)', description: 'Congé de deuil pour parent proche', annual_quota: 3, remuneration: true },
     { id: 8, name: 'Circoncision d\'un enfant', description: 'Congé pour circoncision d\'un enfant', annual_quota: 2, remuneration: true },
-    { id: 9, name: 'Congé pour examen', description: 'Congé pour passer un examen', annual_quota: 0, remuneration: false },
-    { id: 10, name: 'Congé sans solde', description: 'Congé non rémunéré', annual_quota: 0, remuneration: false },
-    { id: 11, name: 'Congé sabbatique', description: 'Congé sabbatique de longue durée', annual_quota: 365, remuneration: false },
+    // { id: 9, name: 'Congé pour examen', description: 'Congé pour passer un examen', annual_quota: 0, remuneration: false },
+    // { id: 10, name: 'Congé sans solde', description: 'Congé non rémunéré', annual_quota: 0, remuneration: false },
+    // { id: 11, name: 'Congé sabbatique', description: 'Congé sabbatique de longue durée', annual_quota: 365, remuneration: false },
   ]
 
   for (const leaveType of leaveTypes) {
