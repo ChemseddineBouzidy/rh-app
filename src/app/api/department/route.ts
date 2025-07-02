@@ -116,7 +116,7 @@ export const DELETE = async (req: Request) => {
             });
         }
 
-        // Check if department exists and get user count
+       
         const departmentWithUsers = await prisma.department.findUnique({
             where: { id: parseInt(id) },
             include: {
@@ -134,7 +134,6 @@ export const DELETE = async (req: Request) => {
             });
         }
 
-        // If department has users, remove them from the department first
         if (departmentWithUsers._count.users > 0) {
             await prisma.user.updateMany({
                 where: { department_id: parseInt(id) },
@@ -142,7 +141,7 @@ export const DELETE = async (req: Request) => {
             });
         }
 
-        // Now delete the department
+      
         await prisma.department.delete({
             where: { id: parseInt(id) },
         });

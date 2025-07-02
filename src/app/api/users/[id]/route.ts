@@ -37,8 +37,7 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
         const data = await req.json();
 
         const updateData: any = { ...data };
-        
-        // Handle date conversions
+       
         if (updateData.birth_date) {
             updateData.birth_date = new Date(updateData.birth_date);
         }
@@ -46,7 +45,7 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
             updateData.hire_date = new Date(updateData.hire_date);
         }
 
-        // Handle department_id null values
+  
         if (updateData.department_id === null || updateData.department_id === '') {
             updateData.department_id = null;
         }
@@ -90,7 +89,7 @@ export const DELETE = async (req: Request, { params }: { params: { id: string } 
     try {
         const { id } = params;
 
-        // Check if user exists and get info
+       
         const existingUser = await prisma.user.findUnique({
             where: { id },
             select: { 

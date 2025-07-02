@@ -17,7 +17,6 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      // Si connecté, on redirige vers /admin
       router.push("/admin");
     }
   }, [status, router]);

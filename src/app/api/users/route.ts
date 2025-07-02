@@ -578,14 +578,40 @@ export const POST = async (req: Request) => {
             }
         });
 
-        // Get creator's email from form data
+ // Exemple à placer après la création du nouvel utilisateur
+
+const leaveTypes = [
+  { id: 1, name: 'Congé annuel payé', annual_quota: 18 },
+  { id: 2, name: 'Congé maladie', annual_quota: 180 },
+  { id: 3, name: 'Congé maternité', annual_quota: 98 },
+  { id: 4, name: 'Congé paternité', annual_quota: 3 },
+  { id: 5, name: 'Mariage salarié', annual_quota: 4 },
+  { id: 6, name: 'Mariage enfant', annual_quota: 2 },
+  { id: 7, name: 'Décès (parent proche)', annual_quota: 3 },
+  { id: 8, name: 'Circoncision d\'un enfant', annual_quota: 2 },
+  { id: 9, name: 'Congé pour examen', annual_quota: 0 },
+  { id: 10, name: 'Congé sans solde', annual_quota: 0 },
+  { id: 11, name: 'Congé sabbatique', annual_quota: 365 },
+];
+
+await Promise.all(
+  leaveTypes.map((type) =>
+    prisma.leave_balances.create({
+      data: {
+        user_id: newUser.id,
+        leave_type_id: type.id,
+        balance: type.annual_quota,
+      },
+    })
+  )
+);
+
         const creatorEmail = formData.get('creator_email') as string;
 
         if (!creatorEmail) {
             console.warn("Creator email not provided, using default email configuration");
         }
 
-        // Send welcome email with login credentials
         await sendWelcomeEmail(
             email,
             password,
@@ -643,7 +669,6 @@ export const PUT = async (req: Request) => {
             );
         }
 
-        // Validate enum values
         if (employment_type && !Object.values(EmploymentType).includes(employment_type)) {
             return NextResponse.json(
                 { error: 'Type de contrat invalide' },
@@ -690,7 +715,7 @@ export const PUT = async (req: Request) => {
             gender
         };
 
-        // Remove undefined values
+
         Object.keys(updateData).forEach(key => 
             updateData[key] === undefined && delete updateData[key]
         );
@@ -742,7 +767,7 @@ export const DELETE = async (req: Request) => {
             );
         }
 
-        // Check if user exists
+
         const existingUser = await prisma.user.findUnique({
             where: { id: id },
             select: { 
@@ -763,7 +788,7 @@ export const DELETE = async (req: Request) => {
             );
         }
 
-        // Prevent deletion of admin users
+     
         if (existingUser.role === 'admin') {
             return NextResponse.json(
                 { error: 'Impossible de supprimer un utilisateur administrateur' },
@@ -771,7 +796,7 @@ export const DELETE = async (req: Request) => {
             );
         }
 
-        // Soft delete by archiving instead of hard delete
+
         const deletedUser = await prisma.user.update({
             where: { id: id },
             data: { 

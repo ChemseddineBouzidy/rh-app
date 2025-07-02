@@ -3,7 +3,7 @@ import { PrismaClient } from "../../../../../generated/prisma";
 
 const prisma = new PrismaClient();
 
-// GET - Récupérer un type de congé par ID
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -39,7 +39,6 @@ export async function GET(
   }
 }
 
-// PUT - Mettre à jour un type de congé
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -57,7 +56,7 @@ export async function PUT(
     const body = await request.json();
     const { name, description, annual_quota, remuneration } = body;
 
-    // Validation des données requises
+    
     if (!name || annual_quota === undefined || remuneration === undefined) {
       return NextResponse.json(
         { error: 'Le nom, le quota annuel et la rémunération sont requis' },
@@ -65,7 +64,6 @@ export async function PUT(
       );
     }
 
-    // Validation du quota annuel
     if (typeof annual_quota !== 'number' || annual_quota < 0) {
       return NextResponse.json(
         { error: 'Le quota annuel doit être un nombre positif' },
@@ -73,7 +71,6 @@ export async function PUT(
       );
     }
 
-    // Vérifier si le type de congé existe
     const existingLeaveType = await prisma.leave_types.findUnique({
       where: { id }
     });
@@ -85,7 +82,6 @@ export async function PUT(
       );
     }
 
-    // Vérifier si le nouveau nom existe déjà (sauf pour ce type de congé)
     if (name !== existingLeaveType.name) {
       const nameExists = await prisma.leave_types.findUnique({
         where: { name }
@@ -99,7 +95,6 @@ export async function PUT(
       }
     }
 
-    // Mettre à jour le type de congé
     const updatedLeaveType = await prisma.leave_types.update({
       where: { id },
       data: {
@@ -114,7 +109,6 @@ export async function PUT(
   } catch (error: any) {
     console.error('Erreur lors de la mise à jour du type de congé:', error);
     
-    // Gestion des erreurs Prisma
     if (error.code === 'P2002') {
       return NextResponse.json(
         { error: 'Un type de congé avec ce nom existe déjà' },
@@ -136,7 +130,6 @@ export async function PUT(
   }
 }
 
-// DELETE - Supprimer un type de congé
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -151,7 +144,6 @@ export async function DELETE(
       );
     }
 
-    // Vérifier si le type de congé existe
     const existingLeaveType = await prisma.leave_types.findUnique({
       where: { id }
     });
@@ -163,11 +155,6 @@ export async function DELETE(
       );
     }
 
-    // TODO: Vérifier s'il y a des congés associés à ce type
-    // Vous pourriez vouloir empêcher la suppression si des congés utilisent ce type
-    // ou les supprimer/transférer en cascade selon vos besoins métier
-
-    // Supprimer le type de congé
     await prisma.leave_types.delete({
       where: { id }
     });
@@ -179,7 +166,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Erreur lors de la suppression du type de congé:', error);
     
-    // Gestion des erreurs Prisma
+
     if (error.code === 'P2025') {
       return NextResponse.json(
         { error: 'Type de congé non trouvé' },
@@ -187,7 +174,7 @@ export async function DELETE(
       );
     }
 
-    // Erreur de contrainte de clé étrangère
+  
     if (error.code === 'P2003') {
       return NextResponse.json(
         { error: 'Impossible de supprimer ce type de congé car il est utilisé par des demandes de congé existantes' },
