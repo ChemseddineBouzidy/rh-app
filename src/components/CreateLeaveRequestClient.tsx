@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast, Toaster } from "sonner";
 import { Dashboard } from "./Layout/Dashboard";
-import { CalendarDays, FileText, User, Clock, CheckCircle, XCircle } from "lucide-react";
+import { CalendarDays, FileText, User, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 const leaveRequestSchema = z.object({
   user_id: z.string().min(1, "Utilisateur requis"),
@@ -50,6 +50,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
   const [requestedDays, setRequestedDays] = useState<number | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [validationWarning, setValidationWarning] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof leaveRequestSchema>>({
     resolver: zodResolver(leaveRequestSchema),
@@ -79,6 +80,69 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
     }
   }, [watchedUserId, watchedLeaveTypeId, watchedDateRange]);
 
+  const onSubmit = async (data: z.infer<typeof leaveRequestSchema>) => {
+    setIsSubmitting(true);
+    try {
+      const [start, end] = data.dateRange;
+      const startDate = start ? dayjs(start).format("YYYY-MM-DD") : "";
+      const endDate = end ? dayjs(end).format("YYYY-MM-DD") : "";
+      
+      // Submit the leave request directly - let the API handle validation
+      const res = await fetch("/api/leaveRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          leave_type_id: Number(data.leave_type_id),
+          startDate,
+          endDate,
+          status: "APPROUVE", // Admin creates approved requests
+          validatedBy: adminId,
+        }),
+      });
+      
+      if (res.ok) {
+        toast.success("Demande de congé créée avec succès");
+        form.reset();
+        setAvailableBalance(null);
+        setRequestedDays(null);
+        setBalanceError(null);
+        setValidationWarning(null);
+      } else {
+        const errorData = await res.json();
+        
+        // Handle specific validation errors
+        if (res.status === 403) {
+          if (errorData.error === 'Accès refusé aux congés annuels') {
+            toast.error(`Demande refusée: ${errorData.message}`, {
+              duration: 6000,
+              description: `L'employé doit être embauché depuis au moins 6 mois pour demander des congés annuels.`
+            });
+          } else if (errorData.error === 'Quota de congés annuels dépassé') {
+            toast.error(`Quota dépassé: ${errorData.message}`, {
+              duration: 6000,
+              description: errorData.debug ? 
+                `Détails: ${errorData.debug.maxAllowed} jours max, ${errorData.debug.alreadyUsed} déjà utilisés, ${errorData.debug.requestedDays} demandés` : 
+                undefined
+            });
+          } else {
+            toast.error(errorData.message || errorData.error);
+          }
+        } else {
+          toast.error(errorData.error || "Erreur lors de la création");
+        }
+        
+        console.error("Leave request creation error:", errorData);
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      toast.error("Erreur réseau");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Enhanced balance checking with validation warnings
   const checkLeaveBalance = async () => {
     if (!watchedUserId || !watchedLeaveTypeId || !watchedDateRange[0] || !watchedDateRange[1]) {
       return;
@@ -86,6 +150,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
 
     setIsCheckingBalance(true);
     setBalanceError(null);
+    setValidationWarning(null);
 
     try {
       const startDate = dayjs(watchedDateRange[0]).format("YYYY-MM-DD");
@@ -105,6 +170,33 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
       }
       
       setRequestedDays(businessDays);
+
+      // Check if this is annual leave and get user info for validation preview
+      const selectedLeaveType = leaveTypes.find(t => t.id.toString() === watchedLeaveTypeId);
+      const selectedUser = users.find(u => u.id === watchedUserId);
+      
+      if (selectedLeaveType?.name === 'Congé annuel payé' && selectedUser) {
+        // Get user details to check hire date
+        const userResponse = await fetch(`/api/users/${watchedUserId}`);
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          if (userData.hire_date) {
+            const hireDate = new Date(userData.hire_date);
+            const currentDate = new Date();
+            const monthsDiff = (currentDate.getFullYear() - hireDate.getFullYear()) * 12 + 
+                              (currentDate.getMonth() - hireDate.getMonth());
+            
+            if (monthsDiff < 6) {
+              setValidationWarning(`⚠️ Attention: ${selectedUser.first_name} ${selectedUser.last_name} n'a que ${monthsDiff} mois d'ancienneté. 6 mois minimum requis pour les congés annuels.`);
+              setBalanceError("Employé non éligible aux congés annuels");
+              setIsCheckingBalance(false);
+              return;
+            } else if (monthsDiff === 6) {
+              setValidationWarning(`ℹ️ Info: ${selectedUser.first_name} ${selectedUser.last_name} a exactement 6 mois d'ancienneté. Quota limité à 9 jours pour la première année.`);
+            }
+          }
+        }
+      }
 
       // Check available balance from API
       const res = await fetch(`/api/leave_balances`, {
@@ -126,7 +218,6 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
           setAvailableBalance(errorData.debug.soldeActuel);
           setBalanceError(`Solde insuffisant: ${errorData.debug.soldeActuel} jour(s) disponible(s), ${errorData.debug.joursdemandes} jour(s) demandé(s)`);
         } else if (errorData.message) {
-          // Handle other specific error messages
           setBalanceError(`Erreur: ${errorData.message}`);
         } else {
           setBalanceError("Erreur lors de la vérification du solde. Veuillez réessayer.");
@@ -165,68 +256,6 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
     fetchUsers();
     fetchLeaveTypes();
   }, []);
-
-  const onSubmit = async (data: z.infer<typeof leaveRequestSchema>) => {
-    setIsSubmitting(true);
-    try {
-      // First check the balance one last time
-      const [start, end] = data.dateRange;
-      const startDate = start ? dayjs(start).format("YYYY-MM-DD") : "";
-      const endDate = end ? dayjs(end).format("YYYY-MM-DD") : "";
-      
-      // Verify balance before submitting
-      const balanceCheck = await fetch(`/api/leave_balances`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: data.user_id,
-          leaveTypeId: Number(data.leave_type_id),
-          startDate,
-          endDate
-        }),
-      });
-      
-      if (!balanceCheck.ok) {
-        const errorData = await balanceCheck.json();
-        console.error("Erreur lors de la vérification finale du solde:", errorData);
-        
-        if (errorData.message === "Solde insuffisant") {
-          toast.error(`Impossible de créer la demande: ${errorData.debug ? 
-            `Solde insuffisant (${errorData.debug.soldeActuel} jour(s) disponible(s), ${errorData.debug.joursdemandes} jour(s) demandé(s))` 
-            : "Solde insuffisant"}`);
-        } else {
-          toast.error(`Erreur lors de la vérification du solde: ${errorData.message || "Veuillez réessayer"}`);
-        }
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // If balance is sufficient, proceed with request creation
-      const res = await fetch("/api/leaveRequests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          leave_type_id: Number(data.leave_type_id),
-          startDate,
-          endDate,
-          status: "APPROUVE",
-          validatedBy: adminId,
-        }),
-      });
-      if (res.ok) {
-        toast.success("Demande de congé créée avec succès");
-        form.reset();
-      } else {
-        const error = await res.json();
-        toast.error(error.error || "Erreur lors de la création");
-      }
-    } catch {
-      toast.error("Erreur réseau");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
@@ -444,14 +473,25 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                   />
                   
                   {/* Leave Balance Information */}
-                  {(isCheckingBalance || availableBalance !== null || balanceError) && (
+                  {(isCheckingBalance || availableBalance !== null || balanceError || validationWarning) && (
                     <div className={`mt-3 p-4 rounded-lg border transition-all duration-300 ${
-                      balanceError ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                      balanceError ? 'border-red-200 bg-red-50' : 
+                      validationWarning ? 'border-orange-200 bg-orange-50' : 
+                      'border-gray-200'
                     }`}>
                       {isCheckingBalance && (
                         <div className="flex items-center text-gray-600">
                           <div className="w-4 h-4 mr-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                          Vérification du solde...
+                          Vérification du solde et éligibilité...
+                        </div>
+                      )}
+                      
+                      {!isCheckingBalance && validationWarning && (
+                        <div className="flex items-start gap-2 mb-3">
+                          <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center">
+                            <AlertCircle className="w-3 h-3 text-orange-600" />
+                          </div>
+                          <p className="text-sm font-medium text-orange-700">{validationWarning}</p>
                         </div>
                       )}
                       
@@ -565,8 +605,8 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting || !!balanceError}
-                    className="h-12 px-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 font-medium flex items-center gap-2"
+                    disabled={isSubmitting || (balanceError && !validationWarning)}
+                    className="h-12 px-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 font-medium flex items-center gap-2 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>

@@ -75,22 +75,71 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  // Remove the global dialog state
-  // const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  // Track which request's dialog is open
   const [openRequestId, setOpenRequestId] = useState<string | null>(null);
+  const [userDetails, setUserDetails] = useState<any>(null);
+
+  // Add helper function to calculate tenure
+  const calculateTenure = (hireDate: string) => {
+    if (!hireDate) return null;
+    
+    const hire = new Date(hireDate);
+    const now = new Date();
+    
+    // Calculate total months
+    const monthsDiff = (now.getFullYear() - hire.getFullYear()) * 12 + 
+                      (now.getMonth() - hire.getMonth());
+    
+    // Calculate years and remaining months
+    const years = Math.floor(monthsDiff / 12);
+    const months = monthsDiff % 12;
+    
+    return {
+      totalMonths: monthsDiff,
+      years,
+      months,
+      isEligibleForAnnualLeave: monthsDiff >= 6
+    };
+  };
+
+  const getTenureDisplay = (hireDate: string) => {
+    const tenure = calculateTenure(hireDate);
+    if (!tenure) return "Non définie";
+    
+    const { years, months, totalMonths, isEligibleForAnnualLeave } = tenure;
+    
+    let display = "";
+    if (years > 0) {
+      display += `${years} an${years > 1 ? 's' : ''}`;
+      if (months > 0) {
+        display += ` et ${months} mois`;
+      }
+    } else {
+      display = `${months} mois`;
+    }
+    
+    return {
+      text: display,
+      totalMonths,
+      isEligible: isEligibleForAnnualLeave
+    };
+  };
 
   // Add helper function to handle dialog open/close
   const handleOpenDialog = (request: LeaveRequest) => {
     setSelectedRequest(request);
     setOpenRequestId(request.id);
-    setDecisionReason(""); // Reset decision reason when opening new dialog
+    setDecisionReason("");
+    
+    // Fetch user details when opening dialog
+    fetch(`/api/users/${request.user.id}`)
+      .then(res => res.json())
+      .then(data => setUserDetails(data))
+      .catch(err => console.error('Error fetching user details:', err));
   };
   
   const handleCloseDialog = () => {
     setOpenRequestId(null);
-    // Keep selected request for a moment to avoid UI flicker during closing animation
+    setUserDetails(null);
     setTimeout(() => {
       setSelectedRequest(null);
     }, 300);
@@ -161,15 +210,20 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
 
   const handleDecision = async (requestId: string, decision: 'APPROUVE' | 'REFUSE') => {
     setIsProcessing(true);
+    
+    // Clear any previous status messages
+    const statusEl = document.getElementById("processingStatus");
+    if (statusEl) {
+      statusEl.textContent = "";
+      statusEl.className = "text-center py-2 text-blue-600 font-medium min-h-[40px] transition-all duration-300";
+    }
+    
     try {
       // Si la demande est approuvée, vérifier d'abord le solde de congés
       if (decision === 'APPROUVE' && selectedRequest) {
-        // Inform user that balance verification is in progress
         console.log("DEBUG: Vérification du solde de congés en cours...");
         toast("🔍 Vérification du solde de congés en cours...");
         
-        // Display a message in the UI
-        const statusEl = document.getElementById("processingStatus");
         if (statusEl) {
           statusEl.textContent = "Vérification du solde en cours...";
           statusEl.className = "text-center py-2 text-blue-600 font-medium";
@@ -191,41 +245,36 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
             const balanceError = await balanceRes.json();
             console.warn("Erreur lors de la mise à jour du solde:", balanceError);
             
-            // Handle insufficient balance specifically
             if (balanceError.message === "Solde insuffisant" && balanceError.debug) {
               const { soldeActuel, joursdemandes } = balanceError.debug;
               const errorMessage = `Impossible d'approuver: Solde insuffisant pour ${selectedRequest.user.first_name} ${selectedRequest.user.last_name}. Solde actuel: ${soldeActuel} jour(s), Jours demandés: ${joursdemandes} jour(s).`;
               
               toast.error(errorMessage);
               
-              // Update status indicator with the error
               if (statusEl) {
                 statusEl.textContent = errorMessage;
                 statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
               }
               
               setIsProcessing(false);
-              return; // Don't close dialog so user can see the error
+              return;
             } else {
-              // For other balance errors, still don't approve
               const errorMessage = `Impossible d'approuver: ${balanceError.message}`;
               toast.error(errorMessage);
               
-              // Update status indicator with the error
               if (statusEl) {
                 statusEl.textContent = errorMessage;
                 statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
               }
               
               setIsProcessing(false);
-              return; // Don't close dialog so user can see the error
+              return;
             }
           } else {
             const balanceData = await balanceRes.json();
             console.log("Solde mis à jour:", balanceData);
             toast.success("Solde de congés vérifié et mis à jour avec succès ✓");
             
-            // Update status indicator with success
             if (statusEl) {
               statusEl.textContent = "Solde de congés vérifié et mis à jour avec succès ✓";
               statusEl.className = "text-center py-2 text-green-600 font-medium bg-green-50 border border-green-200 rounded-md p-3";
@@ -234,14 +283,18 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
         } catch (balanceError) {
           console.error("Erreur lors de la déduction du solde:", balanceError);
           toast.error("Impossible d'approuver: Erreur lors de la vérification du solde");
-          setSelectedRequest(null);
-          setDecisionReason("");
+          
+          if (statusEl) {
+            statusEl.textContent = "Erreur lors de la vérification du solde";
+            statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
+          }
+          
           setIsProcessing(false);
           return;
         }
       }
 
-      // Only proceed to update the leave request status if balance check passed (or if rejecting)
+      // Update the leave request status
       const res = await fetch("/api/leaveRequests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -255,8 +308,42 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erreur lors de la mise à jour");
+        
+        // Handle specific validation errors for rejections too
+        if (res.status === 403) {
+          let errorMessage = "";
+          
+          if (errorData.error === 'Accès refusé aux congés annuels') {
+            errorMessage = `Demande invalide: ${errorData.message}`;
+            toast.error(errorMessage, {
+              duration: 6000,
+              description: "L'employé n'a pas l'ancienneté requise pour les congés annuels."
+            });
+          } else if (errorData.error === 'Quota de congés annuels dépassé') {
+            errorMessage = `Quota dépassé: ${errorData.message}`;
+            toast.error(errorMessage, {
+              duration: 6000,
+              description: errorData.debug ? 
+                `Détails: ${errorData.debug.maxAllowed} jours max, ${errorData.debug.alreadyUsed} déjà utilisés, ${errorData.debug.requestedDays} demandés` : 
+                undefined
+            });
+          } else {
+            errorMessage = errorData.message || errorData.error;
+            toast.error(errorMessage);
+          }
+          
+          if (statusEl) {
+            statusEl.textContent = errorMessage;
+            statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
+          }
+          
+          setIsProcessing(false);
+          return;
+        } else {
+          throw new Error(errorData.error || "Erreur lors de la mise à jour");
+        }
       }
+      
       const updated = await res.json();
 
       setLeaveRequests(prev => 
@@ -273,14 +360,19 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
       );
 
       toast.success(`Demande ${decision === 'APPROUVE' ? 'approuvée' : 'rejetée'} avec succès`);
-
-      // Change this line
-      setOpenRequestId(null); // Close dialog instead of using setIsDialogOpen
       
+      setOpenRequestId(null);
       setSelectedRequest(null);
       setDecisionReason("");
     } catch (error: any) {
+      console.error("Error processing request:", error);
       toast.error(error.message || "Erreur lors du traitement de la demande");
+      
+      const statusEl = document.getElementById("processingStatus");
+      if (statusEl) {
+        statusEl.textContent = error.message || "Erreur lors du traitement de la demande";
+        statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -584,7 +676,74 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                                           {format(new Date(selectedRequest.endDate), 'dd MMMM yyyy', { locale: fr })}
                                         </p>
                                       </div>
+                                      <div>
+                                        <h4 className="font-medium text-gray-700 mb-2">Durée</h4>
+                                        <p className="text-gray-900">
+                                          {calculateDuration(selectedRequest.startDate, selectedRequest.endDate)} jour(s) ouvrés
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <h4 className="font-medium text-gray-700 mb-2">Date de demande</h4>
+                                        <p className="text-gray-900">
+                                          {format(new Date(selectedRequest.createdAt), 'dd MMMM yyyy', { locale: fr })}
+                                        </p>
+                                      </div>
                                     </div>
+
+                                    {/* Employee Tenure Information */}
+                                    {userDetails?.hire_date && (
+                                      <div className={`p-4 rounded-lg border ${
+                                        selectedRequest.leave_type.name === 'Congé annuel payé' && !getTenureDisplay(userDetails.hire_date).isEligible
+                                          ? 'border-red-200 bg-red-50' 
+                                          : selectedRequest.leave_type.name === 'Congé annuel payé' && getTenureDisplay(userDetails.hire_date).totalMonths === 6
+                                          ? 'border-orange-200 bg-orange-50'
+                                          : 'border-gray-200 bg-gray-50'
+                                      }`}>
+                                        <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                          <Clock className="h-4 w-4" />
+                                          Informations d'ancienneté
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <p className="text-sm text-gray-600">Date d'embauche</p>
+                                            <p className="font-medium text-gray-900">
+                                              {format(new Date(userDetails.hire_date), 'dd MMMM yyyy', { locale: fr })}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <p className="text-sm text-gray-600">Temps dans l'entreprise</p>
+                                            <p className="font-medium text-gray-900">{getTenureDisplay(userDetails.hire_date).text}</p>
+                                          </div>
+                                        </div>
+                                        
+                                        {selectedRequest.leave_type.name === 'Congé annuel payé' && (
+                                          <div className="mt-3 pt-3 border-t border-gray-200">
+                                            {!getTenureDisplay(userDetails.hire_date).isEligible ? (
+                                              <div className="flex items-center gap-2 text-red-700">
+                                                <XCircle className="h-4 w-4" />
+                                                <span className="text-sm font-medium">
+                                                  ⚠️ Employé non éligible aux congés annuels (moins de 6 mois d'ancienneté)
+                                                </span>
+                                              </div>
+                                            ) : getTenureDisplay(userDetails.hire_date).totalMonths === 6 ? (
+                                              <div className="flex items-center gap-2 text-orange-700">
+                                                <Clock className="h-4 w-4" />
+                                                <span className="text-sm font-medium">
+                                                  ℹ️ Employé avec 6 mois d'ancienneté - Quota limité à 9 jours pour la première année
+                                                </span>
+                                              </div>
+                                            ) : (
+                                              <div className="flex items-center gap-2 text-green-700">
+                                                <CheckCircle className="h-4 w-4" />
+                                                <span className="text-sm font-medium">
+                                                  ✓ Employé éligible aux congés annuels
+                                                </span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                     
                                     <div>
                                       <h4 className="font-medium text-gray-700 mb-2">Raison</h4>

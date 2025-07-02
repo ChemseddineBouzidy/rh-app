@@ -13,7 +13,7 @@ export default withAuth(
       return NextResponse.redirect(new URL("/auth/signin", req.url));
     }
 
-    if (pathname.startsWith("/admin") && role !== "admin") {
+    if (pathname.startsWith("/admin") && role !== "admin" && role !== "rh") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
@@ -25,9 +25,9 @@ export default withAuth(
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (pathname.startsWith("/rh") && role !== "rh") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+    // if (pathname.startsWith("/rh") && role !== "rh") {
+    //   return NextResponse.redirect(new URL("/unauthorized", req.url));
+    // }
 
     return NextResponse.next();
   },

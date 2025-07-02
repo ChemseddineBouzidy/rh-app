@@ -144,9 +144,26 @@ const NouvelleDemandePage = () => {
         }, 2000);
       } else {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Erreur lors de la soumission de la demande');
+        
+        // Handle specific error cases with detailed messages
+        if (response.status === 403) {
+          // Display validation error with detailed information
+          toast.error(errorData.message || errorData.error, {
+            duration: 6000,
+            description: errorData.debug ? 
+              `Détails: ${JSON.stringify(errorData.debug, null, 2)}` : 
+              undefined
+          });
+        } else {
+          // Display general error
+          toast.error(errorData.error || 'Erreur lors de la soumission de la demande');
+        }
+        
+        // Log detailed error for debugging
+        console.error('Leave request error:', errorData);
       }
     } catch (error) {
+      console.error('Network error:', error);
       toast.error('Erreur de connexion. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);

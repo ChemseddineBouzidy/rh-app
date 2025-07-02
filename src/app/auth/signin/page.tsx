@@ -47,10 +47,10 @@ export default function SignInPage() {
           router.push("/employe");
           break;
         case "rh":
-          router.push("/rh");
+          router.push("/admin");
           break;
         case "manager":
-          router.push("/manager");
+          router.push("/employe");
           break;
         default:
           router.push("/");

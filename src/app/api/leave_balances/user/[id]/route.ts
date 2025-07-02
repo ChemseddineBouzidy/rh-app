@@ -38,7 +38,6 @@ export async function GET(
       );
     }
 
-    // Récupérer tous les soldes de congés de l'utilisateur
     const balances = await prisma.leave_balances.findMany({
       where: {
         user_id: userId,
@@ -60,7 +59,6 @@ export async function GET(
       },
     });
 
-    // Calculer les statistiques détaillées
     const balancesWithStats = balances.map(balance => {
       const usedDays = balance.leave_type.annual_quota - balance.balance;
       const usagePercentage = (usedDays / balance.leave_type.annual_quota) * 100;
@@ -82,7 +80,6 @@ export async function GET(
       };
     });
 
-    // Calculer les statistiques globales
     const totalQuota = balances.reduce((sum, b) => sum + b.leave_type.annual_quota, 0);
     const totalUsed = balances.reduce((sum, b) => sum + (b.leave_type.annual_quota - b.balance), 0);
     const totalRemaining = balances.reduce((sum, b) => sum + b.balance, 0);

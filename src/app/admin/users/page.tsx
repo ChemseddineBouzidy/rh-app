@@ -12,6 +12,7 @@ import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { toast } from "sonner"
 import {
   Card,
   CardContent,
@@ -52,6 +53,7 @@ const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -144,6 +146,34 @@ const UsersPage = () => {
   // Get user initials for avatar fallback
   const getUserInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${userName} ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    setDeletingUserId(userId);
+    
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the user from the local state
+        setUsers(prev => prev.filter(user => user.id !== userId));
+        toast.success(`Utilisateur ${userName} supprimé avec succès`);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Erreur de connexion lors de la suppression');
+    } finally {
+      setDeletingUserId(null);
+    }
   };
 
   return (
@@ -349,8 +379,14 @@ const UsersPage = () => {
                         size="sm"
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50"
                         title="Supprimer l'utilisateur"
+                        onClick={() => handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`)}
+                        disabled={deletingUserId === user.id}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deletingUserId === user.id ? (
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>

@@ -10,7 +10,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get the user ID from the URL params
     const userId = params.id;
     
     if (!userId) {
@@ -22,10 +21,7 @@ export async function GET(
 
     console.log("Fetching leave requests for user ID:", userId);
 
-    // Remove strict authorization - allow access to user's leave requests
-    // This makes the endpoint more accessible for user dashboards
-    
-    // Fetch leave requests for the user with related data
+
     const leaveRequests = await prisma.leaveRequest.findMany({
       where: {
         user_id: userId,
@@ -55,7 +51,6 @@ export async function GET(
 
     console.log("Found leave requests:", leaveRequests.length);
 
-    // Return empty array if no requests found (this is not an error)
     return NextResponse.json(leaveRequests);
   } catch (error: any) {
     console.error("Detailed error fetching user leave requests:", {

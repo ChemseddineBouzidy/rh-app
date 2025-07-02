@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId');
     const leaveTypeId = searchParams.get('leaveTypeId');
 
-    // Si seulement userId est fourni, retourner tous les soldes de l'employé
     if (userId && !leaveTypeId) {
       const balances = await prisma.leave_balances.findMany({
         where: {
@@ -49,7 +48,6 @@ export async function GET(req: NextRequest) {
         }, { status: 404 });
       }
 
-      // Calculer les statistiques pour chaque type de congé
       const balancesWithStats = balances.map(balance => ({
         ...balance,
         used_days: balance.leave_type.annual_quota - balance.balance,
@@ -66,7 +64,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Code existant pour userId + leaveTypeId
     if (!userId || !leaveTypeId) {
       return NextResponse.json({ message: "userId requis, leaveTypeId optionnel" }, { status: 400 });
     }
@@ -119,17 +116,17 @@ export async function POST(req: NextRequest) {
     const days = getWorkingDays(start, end);
     console.log("Jours calculés:", days);
 
-    // nchofo wach leaveTypeId entier
+
     const leaveTypeIdInt = typeof leaveTypeId === 'number' ? leaveTypeId : parseInt(leaveTypeId);
     console.log("LeaveTypeId final:", leaveTypeIdInt);
 
-    // nchofo wach userId kayn
+
     const user = await prisma.user.findUnique({
       where: { id: userId }
     });
     console.log("Utilisateur trouvé:", user ? "Oui" : "Non");
 
-    // nchofo wach leave_types kayn
+
     const leaveType = await prisma.leave_types.findUnique({
       where: { id: leaveTypeIdInt }
     });
@@ -147,7 +144,6 @@ export async function POST(req: NextRequest) {
     console.log("Solde trouvé:", balance);
 
     if (!balance) {
-      // verifie soldes utilisateur
       const allBalances = await prisma.leave_balances.findMany({
         where: { user_id: userId },
         include: { leave_type: true }

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { 
   Home, 
   Users, 
@@ -60,6 +60,7 @@ interface DashboardProps {
 
 const Dashboard = ({ children }: DashboardProps) => {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [activeView, setActiveView] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['']);
@@ -382,6 +383,30 @@ const Dashboard = ({ children }: DashboardProps) => {
     };
   }, [navigationData]);
   
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!session?.user) return 'U';
+    const firstName = session.user.first_name || '';
+    const lastName = session.user.last_name || '';
+    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+  };
+
+  // Get user role display name
+  const getUserRoleDisplay = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+      case 'rh':
+        return 'Ressources Humaines';
+      case 'manager':
+        return 'Manager';
+      case 'employe':
+        return 'Employé';
+      default:
+        return role;
+    }
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Make the sidebar fixed with appropriate height and overflow handling */}
@@ -556,7 +581,54 @@ const Dashboard = ({ children }: DashboardProps) => {
 
         {/* Bottom Section - always at the bottom */}
         <div className="px-3 py-3 border-t border-gray-200/50 flex-shrink-0 mt-auto">
-          {!isCollapsed && (
+          {/* User Information */}
+          {!isCollapsed && session?.user && (
+            <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                    {getUserInitials()}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {session.user.first_name} {session.user.last_name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {getUserRoleDisplay(session.user.role || '')}
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+              {session.user.email && (
+                <div className="mt-2 pt-2 border-t border-gray-200/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {session.user.email}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Collapsed user info */}
+          {isCollapsed && session?.user && (
+            <div className="mb-3 flex justify-center">
+              {renderTooltip(
+                { 
+                  name: `${session.user.first_name} ${session.user.last_name}`,
+                  badge: getUserRoleDisplay(session.user.role || '')
+                },
+                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold relative">
+                  {getUserInitials()}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isCollapsed && !session?.user && (
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span className="font-medium">Entreprise RH</span>
@@ -575,7 +647,7 @@ const Dashboard = ({ children }: DashboardProps) => {
               { 
                 name: 'Déconnexion', 
                 icon: LogOut, 
-                className: 'text-red-600 hover:bg-red-50',
+                className: 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
                 onClick: () => signOut({ callbackUrl: "/auth/signin" })
               },
             ].map((item) => (
