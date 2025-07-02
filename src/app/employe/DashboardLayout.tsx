@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { 
   Home, 
   User, 
@@ -47,6 +47,7 @@ interface DashboardProps {
 
 const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [activeView, setActiveView] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['']);
@@ -491,12 +492,31 @@ const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
           {!isCollapsed && (
             <div className="mb-3">
               <div className="flex items-center space-x-2 text-xs text-gray-600">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-[10px] font-medium text-blue-700">JD</span>
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                  {session?.user?.photo ? (
+                    <Image
+                      src={session.user.photo}
+                      alt="Profile"
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-medium text-blue-700">
+                      {session?.user?.first_name?.[0]}{session?.user?.last_name?.[0]}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <div className="font-medium">John Doe</div>
-                  <div className="text-[10px] text-gray-500">Employé</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">
+                    {session?.user?.first_name} {session?.user?.last_name}
+                  </div>
+                  <div className="text-[10px] text-gray-500 truncate">
+                    {session?.user?.role || 'Employé'}
+                  </div>
+                  <div className="text-[10px] text-gray-400 truncate">
+                    {session?.user?.email}
+                  </div>
                 </div>
               </div>
             </div>

@@ -11,8 +11,64 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('userId');
     const leaveTypeId = searchParams.get('leaveTypeId');
 
+    // Si seulement userId est fourni, retourner tous les soldes de l'employé
+    if (userId && !leaveTypeId) {
+      const balances = await prisma.leave_balances.findMany({
+        where: {
+          user_id: userId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+            },
+          },
+          leave_type: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              annual_quota: true,
+            },
+          },
+        },
+        orderBy: {
+          leave_type: {
+            name: 'asc',
+          },
+        },
+      });
+
+      if (balances.length === 0) {
+        return NextResponse.json({ 
+          message: "Aucun solde de congé trouvé pour cet employé",
+          data: []
+        }, { status: 404 });
+      }
+
+      // Calculer les statistiques pour chaque type de congé
+      const balancesWithStats = balances.map(balance => ({
+        ...balance,
+        used_days: balance.leave_type.annual_quota - balance.balance,
+        usage_percentage: ((balance.leave_type.annual_quota - balance.balance) / balance.leave_type.annual_quota) * 100,
+        is_low_balance: balance.balance <= balance.leave_type.annual_quota * 0.2, // Alerte si moins de 20% restant
+      }));
+
+      return NextResponse.json({ 
+        data: balancesWithStats,
+        summary: {
+          total_leave_types: balances.length,
+          employee: balances[0].user,
+        }
+      });
+    }
+
+    // Code existant pour userId + leaveTypeId
     if (!userId || !leaveTypeId) {
-      return NextResponse.json({ message: "userId et leaveTypeId requis" }, { status: 400 });
+      return NextResponse.json({ message: "userId requis, leaveTypeId optionnel" }, { status: 400 });
     }
 
     const balance = await prisma.leave_balances.findUnique({
