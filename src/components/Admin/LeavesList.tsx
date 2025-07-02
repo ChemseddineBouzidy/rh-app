@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Clock, CheckCircle, XCircle } from "lucide-react";
 
 type Leave = {
   id: string;
@@ -11,47 +13,129 @@ type Leave = {
   type: string;
   typeColor: string;
   duration: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
 };
-
-const initialLeaves: Leave[] = [
-  {
-    id: "1",
-    employee: "Michael Brown",
-    initials: "MB",
-    avatarColor: "bg-red-100 text-red-600",
-    type: "Sick Leave",
-    typeColor: "bg-yellow-100 text-yellow-800",
-    duration: "May 20-22"
-  },
-  {
-    id: "2",
-    employee: "Emma Wilson",
-    initials: "EW",
-    avatarColor: "bg-green-100 text-green-600",
-    type: "Vacation",
-    typeColor: "bg-blue-100 text-blue-800",
-    duration: "Jun 5-15"
-  },
-  {
-    id: "3",
-    employee: "David Thompson",
-    initials: "DT",
-    avatarColor: "bg-blue-100 text-blue-600",
-    type: "Personal",
-    typeColor: "bg-purple-100 text-purple-800",
-    duration: "May 25"
-  }
-];
 
 export default function LeavesList() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [leaves] = useState<Leave[]>(initialLeaves);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Fetch pending leaves from API
+  useEffect(() => {
+    const fetchPendingLeaves = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/leaveRequests');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch leave requests');
+        }
+        
+        const data = await response.json();
+        
+        // Filter for pending leaves only and transform data
+        const pendingLeaves = data
+          .filter((request: any) => request.status === 'EN_ATTENTE')
+          .map((request: any) => {
+            const firstName = request.user?.first_name || '';
+            const lastName = request.user?.last_name || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+            
+            // Generate avatar color based on name
+            const colors = [
+              'bg-red-100 text-red-600',
+              'bg-green-100 text-green-600', 
+              'bg-blue-100 text-blue-600',
+              'bg-purple-100 text-purple-600',
+              'bg-yellow-100 text-yellow-600',
+              'bg-pink-100 text-pink-600',
+              'bg-indigo-100 text-indigo-600'
+            ];
+            const avatarColor = colors[fullName.length % colors.length];
+            
+            // Generate type color based on leave type
+            const typeColors: { [key: string]: string } = {
+              'Congé annuel payé': 'bg-blue-100 text-blue-800',
+              'Congé maladie': 'bg-yellow-100 text-yellow-800',
+              'Congé maternité': 'bg-pink-100 text-pink-800',
+              'Congé paternité': 'bg-green-100 text-green-800',
+              'Mariage salarié': 'bg-purple-100 text-purple-800',
+              'Mariage enfant': 'bg-purple-100 text-purple-800',
+              'Décès (parent proche)': 'bg-gray-100 text-gray-800',
+              'Circoncision d\'un enfant': 'bg-orange-100 text-orange-800',
+              'Congé pour examen': 'bg-cyan-100 text-cyan-800',
+              'Congé sans solde': 'bg-red-100 text-red-800',
+              'Congé sabbatique': 'bg-indigo-100 text-indigo-800'
+            };
+            
+            const leaveTypeName = request.leave_type?.name || 'Unknown';
+            const typeColor = typeColors[leaveTypeName] || 'bg-gray-100 text-gray-800';
+            
+            // Format duration
+            const startDate = new Date(request.startDate);
+            const endDate = new Date(request.endDate);
+            const duration = startDate.toDateString() === endDate.toDateString() 
+              ? startDate.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })
+              : `${startDate.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })}-${endDate.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })}`;
+            
+            return {
+              id: request.id.toString(),
+              employee: fullName,
+              initials,
+              avatarColor,
+              type: leaveTypeName,
+              typeColor,
+              duration,
+              startDate: request.startDate,
+              endDate: request.endDate,
+              reason: request.reason || '',
+              status: request.status
+            };
+          });
+        
+        setLeaves(pendingLeaves);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching leave requests:', err);
+        setError('Failed to load leave requests');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingLeaves();
+  }, []);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'EN_ATTENTE':
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case 'APPROUVE':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'REJETE':
+      case 'REFUSE':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
 
   const filteredLeaves = leaves.filter(leave =>
     leave.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.duration.toLowerCase().includes(searchTerm.toLowerCase())
+    leave.duration.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDetailsClick = () => {
+    router.push('/admin/conges/gestion-demandes');
+  };
 
   return (
     <Card>
@@ -64,7 +148,9 @@ export default function LeavesList() {
             </svg>
           </div>
         </div>
-        <CardDescription>Leave requests awaiting approval</CardDescription>
+        <CardDescription>
+          {loading ? 'Loading...' : `${leaves.length} leave requests awaiting approval`}
+        </CardDescription>
         
         {/* Search input for Leaves */}
         <div className="relative mt-3">
@@ -79,55 +165,70 @@ export default function LeavesList() {
             placeholder="Search leave requests..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={loading}
           />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Employee</th>
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Type</th>
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Duration</th>
-                <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeaves.length > 0 ? (
-                filteredLeaves.map(leave => (
-                  <tr key={leave.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="px-3 py-3">
-                      <div className="flex items-center space-x-3">
-                        <div className={`h-8 w-8 rounded-full ${leave.avatarColor} flex items-center justify-center font-medium`}>
-                          {leave.initials}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            {error}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Employee</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Duration</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeaves.length > 0 ? (
+                  filteredLeaves.map(leave => (
+                    <tr key={leave.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="px-3 py-3">
+                        <div className="flex items-center space-x-3">
+                          <div className={`h-8 w-8 rounded-full ${leave.avatarColor} flex items-center justify-center font-medium`}>
+                            {leave.initials}
+                          </div>
+                          <span>{leave.employee}</span>
                         </div>
-                        <span>{leave.employee}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 text-gray-600 dark:text-gray-400">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${leave.typeColor}`}>
-                        {leave.type}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{leave.duration}</td>
-                    <td className="px-3 py-3">
-                      <button className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-md hover:bg-blue-200 transition-colors">
-                        Details
-                      </button>
+                      </td>
+                      <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{leave.duration}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-center">
+                          {getStatusIcon(leave.status)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button 
+                          onClick={handleDetailsClick}
+                          className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-md hover:bg-blue-200 transition-colors"
+                          title={`Reason: ${leave.reason}`}
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-8 text-center text-gray-500">
+                      {searchTerm ? 'No leave requests found matching your search' : 'No pending leave requests'}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="px-3 py-3 text-center text-gray-500">
-                    No leave requests found matching your search
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

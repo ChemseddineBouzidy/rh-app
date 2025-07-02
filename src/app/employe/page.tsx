@@ -1,5 +1,6 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import EmployeeDashboardLayout from './DashboardLayout';
 import { 
   Calendar, 
@@ -17,15 +18,16 @@ import {
 } from 'lucide-react';
 
 const EmployeePage = () => {
-  // Données simulées pour l'employé
-  const employeeStats = [
+  const { data: session } = useSession();
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [employeeStats, setEmployeeStats] = useState([
     {
       title: "Congés Restants",
-      value: "18 jours",
-      subtitle: "Sur 25 jours",
+      value: "-- jours",
+      subtitle: "Sur -- jours",
       icon: Calendar,
       color: "bg-blue-500",
-      progress: 72
+      progress: 0
     },
     {
       title: "Heures ce Mois",
@@ -51,73 +53,134 @@ const EmployeePage = () => {
       color: "bg-orange-500",
       progress: 40
     }
-  ];
+  ]);
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: "leave",
-      title: "Demande de congé approuvée",
-      description: "Congés du 15-17 Mars validés par votre manager",
-      time: "Il y a 2h",
-      status: "success",
-      icon: CheckCircle
-    },
-    {
-      id: 2,
-      type: "document",
-      title: "Nouveau document disponible",
-      description: "Bulletin de paie de Février 2024",
-      time: "Il y a 4h",
-      status: "info",
-      icon: FileText
-    },
-    {
-      id: 3,
-      type: "training",
-      title: "Formation à compléter",
-      description: "Sécurité informatique - Échéance: 30 Mars",
-      time: "Il y a 1 jour",
-      status: "warning",
-      icon: AlertTriangle
-    },
-    {
-      id: 4,
-      type: "evaluation",
-      title: "Entretien annuel programmé",
-      description: "RDV fixé le 25 Mars à 14h avec votre manager",
-      time: "Il y a 2 jours",
-      status: "info",
-      icon: Target
-    }
-  ];
+  // Fetch recent activities from leave requests and other sources
+  useEffect(() => {
+    const fetchRecentActivities = async () => {
+      if (!session?.user?.id) return;
 
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: "Réunion équipe",
-      date: "Aujourd'hui",
-      time: "14:00 - 15:30",
-      type: "meeting",
-      location: "Salle de conférence A"
-    },
-    {
-      id: 2,
-      title: "Formation Sécurité",
-      date: "Demain",
-      time: "09:00 - 12:00",
-      type: "training",
-      location: "En ligne"
-    },
-    {
-      id: 3,
-      title: "Entretien annuel",
-      date: "25 Mars",
-      time: "14:00 - 15:00",
-      type: "evaluation",
-      location: "Bureau Manager"
+      try {
+        const activities = [];
+
+        // Fetch leave requests
+        const leaveRes = await fetch(`/api/leaveRequests/user/${session.user.id}`);
+        if (leaveRes.ok) {
+          const leaveData = await leaveRes.json();
+          const recentLeaveActivities = leaveData
+            .sort((a: any, b: any) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+            .slice(0, 3)
+            .map((leave: any) => ({
+              id: `leave-${leave.id}`,
+              type: "leave",
+              title: leave.status === 'APPROUVE' ? 'Demande de congé approuvée' :
+                     leave.status === 'REJETE' ? 'Demande de congé rejetée' :
+                     'Demande de congé en attente',
+              description: `${leave.leave_type?.name || 'Congé'} du ${formatDate(leave.start_date)}-${formatDate(leave.end_date)}${
+                leave.status === 'APPROUVE' ? ' validés par votre manager' :
+                leave.status === 'REJETE' ? ' rejetés par votre manager' :
+                ' en cours de validation'
+              }`,
+              time: getTimeAgo(leave.updated_at || leave.created_at),
+              status: leave.status === 'APPROUVE' ? 'success' : 
+                      leave.status === 'REJETE' ? 'error' : 'warning',
+              icon: leave.status === 'APPROUVE' ? CheckCircle :
+                    leave.status === 'REJETE' ? AlertTriangle : Clock
+            }));
+          activities.push(...recentLeaveActivities);
+        }
+
+        // Fetch leave balances for stats
+        const balanceRes = await fetch(`/api/leave_balances/user/${session.user.id}`);
+        if (balanceRes.ok) {
+          const balanceData = await balanceRes.json();
+          if (balanceData.balances && balanceData.balances.length > 0) {
+            const totalRemaining = balanceData.balances.reduce((sum: number, balance: any) => sum + (balance.balance || 0), 0);
+            const totalAllocated = balanceData.balances.reduce((sum: number, balance: any) => sum + (balance.total_quota || 0), 0);
+            const progress = totalAllocated > 0 ? Math.round((totalRemaining / totalAllocated) * 100) : 0;
+            
+            setEmployeeStats(prev => prev.map(stat => 
+              stat.title === "Congés Restants" 
+                ? { ...stat, value: `${totalRemaining} jours`, subtitle: `Sur ${totalAllocated} jours`, progress }
+                : stat
+            ));
+          }
+        }
+
+        // Add mock activities for other types
+        // activities.push(
+        //   {
+        //     id: 'doc-1',
+        //     type: "document",
+        //     title: "Nouveau document disponible",
+        //     description: "Bulletin de paie de Février 2024",
+        //     time: "Il y a 4h",
+        //     status: "info",
+        //     icon: FileText
+        //   },
+        //   {
+        //     id: 'training-1',
+        //     type: "training",
+        //     title: "Formation à compléter",
+        //     description: "Sécurité informatique - Échéance: 30 Mars",
+        //     time: "Il y a 1 jour",
+        //     status: "warning",
+        //     icon: AlertTriangle
+        //   },
+        //   {
+        //     id: 'eval-1',
+        //     type: "evaluation",
+        //     title: "Entretien annuel programmé",
+        //     description: "RDV fixé le 25 Mars à 14h avec votre manager",
+        //     time: "Il y a 2 jours",
+        //     status: "info",
+        //     icon: Target
+        //   }
+        // );
+
+        // Sort by most recent and take top 4
+        const sortedActivities = activities
+          .sort((a, b) => {
+            const timeToMinutes = (timeStr: string) => {
+              if (timeStr.includes('h')) return parseInt(timeStr) * 60;
+              if (timeStr.includes('jour')) return parseInt(timeStr) * 24 * 60;
+              return 0;
+            };
+            return timeToMinutes(a.time) - timeToMinutes(b.time);
+          })
+          .slice(0, 4);
+
+        setRecentActivities(sortedActivities);
+
+      } catch (error) {
+        console.error('Error fetching recent activities:', error);
+      }
+    };
+
+    fetchRecentActivities();
+  }, [session?.user?.id]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short'
+    });
+  };
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Il y a moins d\'1h';
+    } else if (diffInHours < 24) {
+      return `Il y a ${diffInHours}h`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `Il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
     }
-  ];
+  };
 
   const quickActions = [
     {
@@ -154,6 +217,33 @@ const EmployeePage = () => {
     }
   ];
 
+  const upcomingEvents = [
+    {
+      id: 1,
+      title: "Réunion équipe",
+      date: "Aujourd'hui",
+      time: "14:00 - 15:30",
+      type: "meeting",
+      location: "Salle de conférence A"
+    },
+    {
+      id: 2,
+      title: "Formation Sécurité",
+      date: "Demain",
+      time: "09:00 - 12:00",
+      type: "training",
+      location: "En ligne"
+    },
+    {
+      id: 3,
+      title: "Entretien annuel",
+      date: "25 Mars",
+      time: "14:00 - 15:00",
+      type: "evaluation",
+      location: "Bureau Manager"
+    }
+  ];
+
   return (
     <EmployeeDashboardLayout>
       <div className="p-6 space-y-6">
@@ -161,7 +251,7 @@ const EmployeePage = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Bonjour, John Doe
+              Bonjour, {session?.user?.first_name} {session?.user?.last_name}
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               Voici un aperçu de votre activité aujourd'hui
@@ -245,6 +335,7 @@ const EmployeePage = () => {
                     <div className={`p-2 rounded-lg ${
                       activity.status === 'success' ? 'bg-green-100 text-green-600' :
                       activity.status === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                      activity.status === 'error' ? 'bg-red-100 text-red-600' :
                       'bg-blue-100 text-blue-600'
                     }`}>
                       <activity.icon className="w-4 h-4" />

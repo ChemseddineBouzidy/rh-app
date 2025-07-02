@@ -1,4 +1,3 @@
-// lib/workingDays.ts
 export function getWorkingDays(startDate: Date, endDate: Date): number {
   let count = 0;
   const date = new Date(startDate);

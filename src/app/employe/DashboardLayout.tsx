@@ -54,6 +54,108 @@ const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Dynamic badge states
+  const [badgeCounts, setBadgeCounts] = useState({
+    pendingLeaveRequests: 0,
+    unreadMessages: 0,
+    unreadNotifications: 0,
+    newDocuments: 0,
+    lowBalanceTypes: 0,
+  });
+
+  // Recent activities and leave balances
+  const [recentLeaveActivities, setRecentLeaveActivities] = useState<any[]>([]);
+  const [remainingLeave, setRemainingLeave] = useState<any[]>([]);
+
+  // Fetch dynamic badge counts
+  useEffect(() => {
+    const fetchBadgeCounts = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        // Fetch leave requests count
+        const leaveRequestsRes = await fetch(`/api/leaveRequests/user/${session.user.id}`);
+        if (leaveRequestsRes.ok) {
+          const leaveData = await leaveRequestsRes.json();
+          const pendingCount = leaveData.filter((req: any) => req.status === 'EN_ATTENTE').length;
+          setBadgeCounts(prev => ({ ...prev, pendingLeaveRequests: pendingCount }));
+          
+          // Get recent activities (last 5 leave requests)
+          const recentActivities = leaveData
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 5);
+          setRecentLeaveActivities(recentActivities);
+        }
+
+        // Fetch leave balance alerts
+        const balanceRes = await fetch(`/api/leave_balances/user/${session.user.id}`);
+        if (balanceRes.ok) {
+          const balanceData = await balanceRes.json();
+          const lowBalanceCount = balanceData.summary?.low_balance_types || 0;
+          setBadgeCounts(prev => ({ ...prev, lowBalanceTypes: lowBalanceCount }));
+          
+          // Set remaining leave balances
+          if (balanceData.balances) {
+            setRemainingLeave(balanceData.balances);
+          }
+        }
+
+        // TODO: Add other API calls for messages, notifications, documents
+        // For now, using mock data
+        setBadgeCounts(prev => ({ 
+          ...prev, 
+          unreadMessages: 3,
+          unreadNotifications: 5,
+          newDocuments: 1
+        }));
+
+      } catch (error) {
+        console.error('Error fetching badge counts:', error);
+      }
+    };
+
+    fetchBadgeCounts();
+    
+    // Refresh counts every 5 minutes
+    const interval = setInterval(fetchBadgeCounts, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [session?.user?.id]);
+
+  const renderActivityIcon = (status: string) => {
+    switch (status) {
+      case 'EN_ATTENTE':
+        return <Clock className="w-3 h-3 text-yellow-500" />;
+      case 'APPROUVE':
+        return <CheckCircle className="w-3 h-3 text-green-500" />;
+      case 'REJETE':
+        return <X className="w-3 h-3 text-red-500" />;
+      default:
+        return <AlertCircle className="w-3 h-3 text-gray-500" />;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+  };
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Il y a moins d\'1h';
+    } else if (diffInHours < 24) {
+      return `Il y a ${diffInHours}h`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `Il y a ${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
+    }
+  };
 
   const navigationData: NavigationItem[] = useMemo(() => [
     { 
@@ -75,56 +177,29 @@ const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
       name: 'Mes Congés',
       href: '/employe/conges',
       icon: Calendar,
-      badge: 2,
+      badge: badgeCounts.pendingLeaveRequests > 0 ? badgeCounts.pendingLeaveRequests : undefined,
       children: [
-        { id: 'conges-demandes', name: 'Mes Demandes', href: '/employe/conges/mes-demandes', current: activeView === 'conges-demandes', badge: 2 },
+        { 
+          id: 'conges-demandes', 
+          name: 'Mes Demandes', 
+          href: '/employe/conges/mes-demandes', 
+          current: activeView === 'conges-demandes', 
+          badge: badgeCounts.pendingLeaveRequests > 0 ? badgeCounts.pendingLeaveRequests : undefined
+        },
         { id: 'conges-nouvelle', name: 'Nouvelle Demande', href: '/employe/conges/nouvelle-demande', current: activeView === 'conges-nouvelle' },
-        { id: 'conges-solde', name: 'Solde de Congés', href: '/employe/conges/solde', current: activeView === 'conges-solde' },
+        { 
+          id: 'conges-solde', 
+          name: 'Solde de Congés', 
+          href: '/employe/conges/solde', 
+          current: activeView === 'conges-solde',
+          badge: badgeCounts.lowBalanceTypes > 0 ? '!' : undefined
+        },
       ],
       current: activeView === 'conges' || activeView === 'conges-demandes' || activeView === 'conges-nouvelle' || activeView === 'conges-solde'
     },
-    { 
-      id: 'temps', 
-      name: 'Temps de Travail', 
-      href: '/employe/temps', 
-      icon: Clock,
-      children: [
-        { id: 'temps-pointage', name: 'Pointage', href: '/employe/temps/pointage', current: activeView === 'temps-pointage' },
-        { id: 'temps-heures', name: 'Mes Heures', href: '/employe/temps/mes-heures', current: activeView === 'temps-heures' },
-      ],
-      current: activeView === 'temps' || activeView === 'temps-pointage' || activeView === 'temps-heures'
-    },
-    { 
-      id: 'documents', 
-      name: 'Documents', 
-      href: '/employe/documents', 
-      icon: FileText,
-      badge: 'NEW',
-      current: activeView === 'documents'
-    },
-    { 
-      id: 'formation', 
-      name: 'Formations', 
-      href: '/employe/formations', 
-      icon: BookOpen,
-      current: activeView === 'formation'
-    },
-    { 
-      id: 'evaluations', 
-      name: 'Évaluations', 
-      href: '/employe/evaluations', 
-      icon: Target,
-      current: activeView === 'evaluations'
-    },
-    { 
-      id: 'messages', 
-      name: 'Messages', 
-      href: '/employe/messages', 
-      icon: MessageSquare,
-      badge: 3,
-      current: activeView === 'messages'
-    }
-  ], [activeView]);
+
+
+  ], [activeView, badgeCounts]);
 
   useEffect(() => {
     if (showSearch && searchInputRef.current) {
@@ -484,6 +559,82 @@ const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
                 </div>
               </div>
             </div>
+
+            {/* Congés Restants */}
+            {remainingLeave.length > 0 && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 mb-3">
+                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  Congés Restants
+                </div>
+                <div className="space-y-1">
+                  {remainingLeave.slice(0, 3).map((balance, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-[10px] text-gray-600 truncate max-w-[120px]" title={balance.leave_type?.name || 'Congés'}>
+                        {balance.leave_type?.name || 'Congés'}
+                      </span>
+                      <span className={`text-[10px] font-medium ${
+                        balance.status === 'épuisé' || balance.balance === 0 ? 'text-red-600' : 
+                        balance.is_low_balance || balance.balance < 5 ? 'text-orange-600' : 
+                        'text-green-700'
+                      }`}>
+                        {balance.balance || 0}j
+                      </span>
+                    </div>
+                  ))}
+                  {remainingLeave.length > 3 && (
+                    <button 
+                      onClick={() => handleNavigation('conges-solde')}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-medium w-full text-left pt-1"
+                    >
+                      Voir tout ({remainingLeave.length})
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Activités Récentes */}
+            {recentLeaveActivities.length > 0 && (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 mb-3">
+                <div className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Activités Récentes
+                </div>
+                <div className="space-y-2">
+                  {recentLeaveActivities.slice(0, 3).map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-2">
+                      {renderActivityIcon(activity.status)}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-medium text-gray-700 mb-1">
+                          {activity.status === 'APPROUVE' ? 'Demande de congé approuvée' :
+                           activity.status === 'REJETE' ? 'Demande de congé rejetée' :
+                           activity.status === 'EN_ATTENTE' ? 'Demande de congé en attente' :
+                           'Demande de congé'}
+                        </div>
+                        <div className="text-[9px] text-gray-600 mb-1">
+                          {activity.leave_type?.name || 'Congé'} du {formatDate(activity.start_date)}-{formatDate(activity.end_date)}
+                          {activity.status === 'APPROUVE' ? ' validés par votre manager' :
+                           activity.status === 'REJETE' ? ' rejetés par votre manager' :
+                           ' en cours de validation'}
+                        </div>
+                        <div className="text-[8px] text-gray-400">
+                          {getTimeAgo(activity.updated_at || activity.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {recentLeaveActivities.length > 3 && (
+                    <button 
+                      onClick={() => handleNavigation('conges-demandes')}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-medium w-full text-left pt-1"
+                    >
+                      Voir toutes les demandes ({recentLeaveActivities.length})
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -524,8 +675,13 @@ const EmployeeDashboardLayout = ({ children }: DashboardProps) => {
 
           <div className="space-y-2">
             {[
-              { name: 'Paramètres', icon: Settings, id: 'settings' },
-              { name: 'Notifications', icon: Bell, id: 'notifications', badge: 3 },
+              // { name: 'Paramètres', icon: Settings, id: 'settings' },
+              // { 
+              //   name: 'Notifications', 
+              //   icon: Bell, 
+              //   id: 'notifications', 
+              //   badge: badgeCounts.unreadNotifications > 0 ? badgeCounts.unreadNotifications : undefined
+              // },
               { 
                 name: 'Déconnexion', 
                 icon: LogOut, 

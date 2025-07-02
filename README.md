@@ -49,4 +49,15 @@ Fonctionnalités attendues :
    - Script pour réinitialiser ou recharger les soldes chaque année
    - Affichage du solde restant par type dans le dashboard
 
-Donne-moi le code complet ou les fichiers nécessaires pour construire cette application.
+export function getWorkingDays(startDate: Date, endDate: Date): number {
+  let count = 0; // compteur de jours ouvrables
+  const date = new Date(startDate); // on copie la date de départ pour ne pas la modifier
+
+  while (date < endDate) {
+    const day = date.getDay(); // récupère le jour de la semaine (0=dimanche, 6=samedi)
+    if (day !== 0 && day !== 6) count++; // si ce n’est pas samedi (6) ni dimanche (0), on ajoute 1
+    date.setDate(date.getDate() + 1); // on avance d’un jour
+  }
+
+  return count; // on retourne le nombre de jours ouvrables
+}

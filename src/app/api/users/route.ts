@@ -589,9 +589,9 @@ const leaveTypes = [
   { id: 6, name: 'Mariage enfant', annual_quota: 2 },
   { id: 7, name: 'Décès (parent proche)', annual_quota: 3 },
   { id: 8, name: 'Circoncision d\'un enfant', annual_quota: 2 },
-  { id: 9, name: 'Congé pour examen', annual_quota: 0 },
-  { id: 10, name: 'Congé sans solde', annual_quota: 0 },
-  { id: 11, name: 'Congé sabbatique', annual_quota: 365 },
+//   { id: 9, name: 'Congé pour examen', annual_quota: 0 },
+//   { id: 10, name: 'Congé sans solde', annual_quota: 0 },
+//   { id: 11, name: 'Congé sabbatique', annual_quota: 365 },
 ];
 
 await Promise.all(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 type User = {
@@ -32,6 +33,7 @@ type User = {
 export default function UsersList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<User[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -81,6 +83,10 @@ export default function UsersList() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleDetailsClick = (userId: string) => {
+    router.push(`/admin/users/${userId}`);
   };
 
   return (
@@ -140,7 +146,10 @@ export default function UsersList() {
                     <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{user.job_title}</td>
                     <td className="px-3 py-3 text-gray-600 dark:text-gray-400">{formatDate(user.hire_date)}</td>
                     <td className="px-3 py-3">
-                      <button className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-md hover:bg-blue-200 transition-colors">
+                      <button 
+                        onClick={() => handleDetailsClick(user.id)}
+                        className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-md hover:bg-blue-200 transition-colors"
+                      >
                         Détails
                       </button>
                     </td>
