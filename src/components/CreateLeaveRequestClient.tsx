@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { toast, Toaster } from "sonner";
 import { Dashboard } from "./Layout/Dashboard";
-import { CalendarDays, FileText, User, Clock, CheckCircle } from "lucide-react";
+import { CalendarDays, FileText, User, Clock, CheckCircle, XCircle } from "lucide-react";
 
 const leaveRequestSchema = z.object({
   user_id: z.string().min(1, "Utilisateur requis"),
@@ -42,10 +42,14 @@ const leaveRequestSchema = z.object({
 
 export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminId: string | null; userInfo: any }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const [users, setUsers] = useState<{ id: string; first_name: string; last_name: string; photo?: string | null }[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [leaveTypes, setLeaveTypes] = useState<{ id: number; name: string; description?: string | null }[]>([]);
   const [leaveTypeSearch, setLeaveTypeSearch] = useState("");
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null);
+  const [requestedDays, setRequestedDays] = useState<number | null>(null);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof leaveRequestSchema>>({
     resolver: zodResolver(leaveRequestSchema),
@@ -58,6 +62,86 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
       decisionReason: "",
     },
   });
+
+  // Watch for changes in user, leave type and date range to check balance
+  const watchedUserId = form.watch("user_id");
+  const watchedLeaveTypeId = form.watch("leave_type_id");
+  const watchedDateRange = form.watch("dateRange");
+
+  useEffect(() => {
+    // Reset balance info when any of the key fields change
+    if (watchedDateRange[0] && watchedDateRange[1] && watchedUserId && watchedLeaveTypeId) {
+      checkLeaveBalance();
+    } else {
+      setAvailableBalance(null);
+      setRequestedDays(null);
+      setBalanceError(null);
+    }
+  }, [watchedUserId, watchedLeaveTypeId, watchedDateRange]);
+
+  const checkLeaveBalance = async () => {
+    if (!watchedUserId || !watchedLeaveTypeId || !watchedDateRange[0] || !watchedDateRange[1]) {
+      return;
+    }
+
+    setIsCheckingBalance(true);
+    setBalanceError(null);
+
+    try {
+      const startDate = dayjs(watchedDateRange[0]).format("YYYY-MM-DD");
+      const endDate = dayjs(watchedDateRange[1]).format("YYYY-MM-DD");
+
+      // Calculate business days first
+      let businessDays = 0;
+      const current = new Date(startDate);
+      const end = new Date(endDate);
+      
+      while (current <= end) {
+        const dayOfWeek = current.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          businessDays++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      
+      setRequestedDays(businessDays);
+
+      // Check available balance from API
+      const res = await fetch(`/api/leave_balances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: watchedUserId,
+          leaveTypeId: Number(watchedLeaveTypeId),
+          startDate,
+          endDate
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Erreur détaillée:", errorData);
+        
+        if (errorData.message === "Solde insuffisant" && errorData.debug) {
+          setAvailableBalance(errorData.debug.soldeActuel);
+          setBalanceError(`Solde insuffisant: ${errorData.debug.soldeActuel} jour(s) disponible(s), ${errorData.debug.joursdemandes} jour(s) demandé(s)`);
+        } else if (errorData.message) {
+          // Handle other specific error messages
+          setBalanceError(`Erreur: ${errorData.message}`);
+        } else {
+          setBalanceError("Erreur lors de la vérification du solde. Veuillez réessayer.");
+        }
+      } else {
+        const data = await res.json();
+        setAvailableBalance(data.availableBalance);
+      }
+    } catch (error) {
+      console.error("Exception lors de la vérification du solde:", error);
+      setBalanceError("Erreur lors de la vérification du solde. Veuillez vérifier votre connexion et réessayer.");
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -85,9 +169,39 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
   const onSubmit = async (data: z.infer<typeof leaveRequestSchema>) => {
     setIsSubmitting(true);
     try {
+      // First check the balance one last time
       const [start, end] = data.dateRange;
       const startDate = start ? dayjs(start).format("YYYY-MM-DD") : "";
       const endDate = end ? dayjs(end).format("YYYY-MM-DD") : "";
+      
+      // Verify balance before submitting
+      const balanceCheck = await fetch(`/api/leave_balances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: data.user_id,
+          leaveTypeId: Number(data.leave_type_id),
+          startDate,
+          endDate
+        }),
+      });
+      
+      if (!balanceCheck.ok) {
+        const errorData = await balanceCheck.json();
+        console.error("Erreur lors de la vérification finale du solde:", errorData);
+        
+        if (errorData.message === "Solde insuffisant") {
+          toast.error(`Impossible de créer la demande: ${errorData.debug ? 
+            `Solde insuffisant (${errorData.debug.soldeActuel} jour(s) disponible(s), ${errorData.debug.joursdemandes} jour(s) demandé(s))` 
+            : "Solde insuffisant"}`);
+        } else {
+          toast.error(`Erreur lors de la vérification du solde: ${errorData.message || "Veuillez réessayer"}`);
+        }
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // If balance is sufficient, proceed with request creation
       const res = await fetch("/api/leaveRequests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -328,6 +442,61 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                       </FormItem>
                     )}
                   />
+                  
+                  {/* Leave Balance Information */}
+                  {(isCheckingBalance || availableBalance !== null || balanceError) && (
+                    <div className={`mt-3 p-4 rounded-lg border transition-all duration-300 ${
+                      balanceError ? 'border-red-200 bg-red-50' : 'border-gray-200'
+                    }`}>
+                      {isCheckingBalance && (
+                        <div className="flex items-center text-gray-600">
+                          <div className="w-4 h-4 mr-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          Vérification du solde...
+                        </div>
+                      )}
+                      
+                      {!isCheckingBalance && availableBalance !== null && !balanceError && (
+                        <div className="flex items-start gap-2">
+                          <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              Solde disponible: <span className="text-green-600 font-semibold">{availableBalance} jour(s)</span>
+                            </p>
+                            {requestedDays && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Jours ouvrés demandés: {requestedDays} jour(s)
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!isCheckingBalance && balanceError && (
+                        <div className="flex items-start gap-2">
+                          <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                            <XCircle className="w-3 h-3 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-red-600">{balanceError}</p>
+                            {availableBalance !== null && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Solde disponible: {availableBalance} jour(s)
+                              </p>
+                            )}
+                            <button 
+                              type="button"
+                              onClick={checkLeaveBalance}
+                              className="text-xs text-blue-600 hover:text-blue-800 mt-2 underline"
+                            >
+                              Réessayer la vérification
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <Separator className="my-8" />
@@ -396,7 +565,7 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !!balanceError}
                     className="h-12 px-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 font-medium flex items-center gap-2"
                   >
                     {isSubmitting ? (
@@ -412,7 +581,6 @@ export default function CreateLeaveRequestClient({ adminId, userInfo }: { adminI
                     )}
                   </Button>
                 </div>
-
               </form>
             </Form>
           </CardContent>

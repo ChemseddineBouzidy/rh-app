@@ -60,7 +60,7 @@ interface LeaveRequest {
   startDate: string;
   endDate: string;
   reason: string;
-  status: 'EN_ATTENTE' | 'APPROVED' | 'REFUSE';
+  status: 'EN_ATTENTE' | 'APPROUVE' | 'REFUSE';
   createdAt: string;
   validatedBy?: string;
   decisionReason?: string;
@@ -75,6 +75,26 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null);
   const [decisionReason, setDecisionReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  // Remove the global dialog state
+  // const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Track which request's dialog is open
+  const [openRequestId, setOpenRequestId] = useState<string | null>(null);
+
+  // Add helper function to handle dialog open/close
+  const handleOpenDialog = (request: LeaveRequest) => {
+    setSelectedRequest(request);
+    setOpenRequestId(request.id);
+    setDecisionReason(""); // Reset decision reason when opening new dialog
+  };
+  
+  const handleCloseDialog = () => {
+    setOpenRequestId(null);
+    // Keep selected request for a moment to avoid UI flicker during closing animation
+    setTimeout(() => {
+      setSelectedRequest(null);
+    }, 300);
+  };
 
   useEffect(() => {
     // Remplacer le mock par un appel à l'API
@@ -139,10 +159,89 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
     setFilteredRequests(filtered);
   }, [leaveRequests, statusFilter, searchTerm]);
 
-  const handleDecision = async (requestId: string, decision: 'APPROVED' | 'REFUSE') => {
+  const handleDecision = async (requestId: string, decision: 'APPROUVE' | 'REFUSE') => {
     setIsProcessing(true);
     try {
-    
+      // Si la demande est approuvée, vérifier d'abord le solde de congés
+      if (decision === 'APPROUVE' && selectedRequest) {
+        // Inform user that balance verification is in progress
+        console.log("DEBUG: Vérification du solde de congés en cours...");
+        toast("🔍 Vérification du solde de congés en cours...");
+        
+        // Display a message in the UI
+        const statusEl = document.getElementById("processingStatus");
+        if (statusEl) {
+          statusEl.textContent = "Vérification du solde en cours...";
+          statusEl.className = "text-center py-2 text-blue-600 font-medium";
+        }
+        
+        try {
+          const balanceRes = await fetch("/api/leave_balances", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: selectedRequest.user.id,
+              leaveTypeId: selectedRequest.leave_type.id,
+              startDate: selectedRequest.startDate,
+              endDate: selectedRequest.endDate,
+            }),
+          });
+          
+          if (!balanceRes.ok) {
+            const balanceError = await balanceRes.json();
+            console.warn("Erreur lors de la mise à jour du solde:", balanceError);
+            
+            // Handle insufficient balance specifically
+            if (balanceError.message === "Solde insuffisant" && balanceError.debug) {
+              const { soldeActuel, joursdemandes } = balanceError.debug;
+              const errorMessage = `Impossible d'approuver: Solde insuffisant pour ${selectedRequest.user.first_name} ${selectedRequest.user.last_name}. Solde actuel: ${soldeActuel} jour(s), Jours demandés: ${joursdemandes} jour(s).`;
+              
+              toast.error(errorMessage);
+              
+              // Update status indicator with the error
+              if (statusEl) {
+                statusEl.textContent = errorMessage;
+                statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
+              }
+              
+              setIsProcessing(false);
+              return; // Don't close dialog so user can see the error
+            } else {
+              // For other balance errors, still don't approve
+              const errorMessage = `Impossible d'approuver: ${balanceError.message}`;
+              toast.error(errorMessage);
+              
+              // Update status indicator with the error
+              if (statusEl) {
+                statusEl.textContent = errorMessage;
+                statusEl.className = "text-center py-2 text-red-600 font-medium bg-red-50 border border-red-200 rounded-md p-3";
+              }
+              
+              setIsProcessing(false);
+              return; // Don't close dialog so user can see the error
+            }
+          } else {
+            const balanceData = await balanceRes.json();
+            console.log("Solde mis à jour:", balanceData);
+            toast.success("Solde de congés vérifié et mis à jour avec succès ✓");
+            
+            // Update status indicator with success
+            if (statusEl) {
+              statusEl.textContent = "Solde de congés vérifié et mis à jour avec succès ✓";
+              statusEl.className = "text-center py-2 text-green-600 font-medium bg-green-50 border border-green-200 rounded-md p-3";
+            }
+          }
+        } catch (balanceError) {
+          console.error("Erreur lors de la déduction du solde:", balanceError);
+          toast.error("Impossible d'approuver: Erreur lors de la vérification du solde");
+          setSelectedRequest(null);
+          setDecisionReason("");
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // Only proceed to update the leave request status if balance check passed (or if rejecting)
       const res = await fetch("/api/leaveRequests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -153,6 +252,7 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
           decisionReason: decisionReason || null,
         }),
       });
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || "Erreur lors de la mise à jour");
@@ -172,19 +272,15 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
         )
       );
 
-      toast({
-        title: "Succès",
-        description: `Demande ${decision === 'APPROVED' ? 'approuvée' : 'rejetée'} avec succès`,
-      });
+      toast.success(`Demande ${decision === 'APPROUVE' ? 'approuvée' : 'rejetée'} avec succès`);
 
+      // Change this line
+      setOpenRequestId(null); // Close dialog instead of using setIsDialogOpen
+      
       setSelectedRequest(null);
       setDecisionReason("");
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors du traitement de la demande",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Erreur lors du traitement de la demande");
     } finally {
       setIsProcessing(false);
     }
@@ -206,9 +302,29 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
   const calculateDuration = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    
+    // Include the start and end dates in the calculation
+    let days = 0;
+    const current = new Date(start);
+    current.setHours(0, 0, 0, 0);
+    
+    // Set end hours to 0 for accurate comparison
+    const endDateOnly = new Date(end);
+    endDateOnly.setHours(0, 0, 0, 0);
+    
+    // Count all days between start and end (inclusive)
+    while (current <= endDateOnly) {
+      // Only count weekdays (Monday = 1, Friday = 5)
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        days++;
+      }
+      
+      // Move to next day
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return days;
   };
 
   if (loading) {
@@ -416,12 +532,18 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Dialog>
+                            <Dialog open={openRequestId === request.id} onOpenChange={(open) => {
+                              if (open) {
+                                handleOpenDialog(request);
+                              } else {
+                                handleCloseDialog();
+                              }
+                            }}>
                               <DialogTrigger asChild>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => setSelectedRequest(request)}
+                                  onClick={() => handleOpenDialog(request)}
                                   className="h-8 px-3 rounded-lg hover:bg-blue-50 hover:border-blue-300"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -486,6 +608,10 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                                             className="min-h-20 rounded-xl border-2 border-gray-200 focus:border-blue-500"
                                           />
                                         </div>
+                                        
+                                        {/* Status indicator - fixed styling */}
+                                        <div id="processingStatus" className="text-center py-2 text-blue-600 font-medium min-h-[40px] transition-all duration-300"></div>
+                                        
                                         <DialogFooter className="flex gap-3">
                                           <Button
                                             variant="outline"
@@ -515,7 +641,6 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                                     )}
                                   </div>
                                 )}
-
                               </DialogContent>
                             </Dialog>
                           </div>
@@ -525,20 +650,6 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
                   </TableBody>
                 </Table>
               </div>
-              
-              {filteredRequests.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Calendar className="h-12 w-12 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune demande trouvée</h3>
-                  <p className="text-gray-500">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'Essayez de modifier vos filtres de recherche.' 
-                      : 'Il n\'y a pas encore de demandes de congés.'}
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -547,8 +658,12 @@ export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: stri
   );
 }
 
-// Ajoutez ce composant d'export par défaut à la fin du fichier
-export default function Page(props: any) {
-  // Passez les props nécessaires à votre composant client
-  return <ManageLeaveRequestsClient {...props} />;
+// Fix the default export to properly handle props
+export default function Page() {
+  // You may need to get adminId and userInfo from session or other source
+  // For now, using null values - adjust according to your auth implementation
+  const adminId = null; // Replace with actual admin ID logic
+  const userInfo = null; // Replace with actual user info logic
+  
+  return <ManageLeaveRequestsClient adminId={adminId} userInfo={userInfo} />;
 }
