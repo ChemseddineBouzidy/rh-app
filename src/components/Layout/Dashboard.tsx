@@ -34,7 +34,8 @@ import {
   Briefcase,
   GraduationCap,
   DollarSign,
-  School
+  School,
+  Lock
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -105,6 +106,13 @@ const Dashboard = ({ children }: DashboardProps) => {
         { id: 'leave-requests', name: 'Gestion des Demandes', href: '/admin/conges/gestion-demandes', current: activeView === 'leave-requests' },
       ],
       current: activeView === 'leave' || activeView === 'leave-list' || activeView === 'leave-create'
+    },
+      { 
+      id: 'reset-password', 
+      name: 'Réinitialisation de mot de passe', 
+      href: '/admin/users/reset-password', 
+      icon: Lock,
+      current: activeView === 'reset-password'
     },
 
   ], [activeView]);
