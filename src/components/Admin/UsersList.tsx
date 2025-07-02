@@ -86,7 +86,16 @@ export default function UsersList() {
   };
 
   const handleDetailsClick = (userId: string) => {
-    router.push(`/admin/users/${userId}`);
+    if (!userId) {
+      console.error('User ID is required');
+      return;
+    }
+    
+    try {
+      router.push(`/admin/users/${userId}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   return (
