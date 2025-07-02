@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
-import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck, User, Edit, Eye, Trash2 } from "lucide-react"
+import { PlusCircle, Search, Briefcase, Calendar, DollarSign, Filter, BadgeCheck, User, Edit, Eye, Trash2, Shield } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -372,6 +372,16 @@ const UsersPage = () => {
                           title="Modifier l'utilisateur"
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/admin/users/reset-password?id=${user.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+                          title="Réinitialiser le mot de passe"
+                        >
+                          <Shield className="w-4 h-4" />
                         </Button>
                       </Link>
                       <Button
