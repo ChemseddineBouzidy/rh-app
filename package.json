@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "build:no-lint": "set NEXT_DISABLE_ESLINT=1 && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "ts-node prisma/seed.js"

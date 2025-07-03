@@ -66,7 +66,7 @@ interface LeaveRequest {
   decisionReason?: string;
 }
 
-export function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: string | null; userInfo: any }) {
+function ManageLeaveRequestsClient({ adminId, userInfo }: { adminId: string | null; userInfo: any }) {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
