@@ -1,9 +1,9 @@
 import { getWorkingDays } from "@/lib/workingDays";
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "../../../../generated/prisma";
+import { prisma } from "@/lib/db";
 
-
-const prisma = new PrismaClient();
+// Add this to prevent static optimization of this route
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {

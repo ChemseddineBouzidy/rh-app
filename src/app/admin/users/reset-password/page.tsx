@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Dashboard } from '@/components/Layout/Dashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const userId = searchParams.get('id');
@@ -298,5 +298,23 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </Dashboard>
+  );
+}
+
+// Loading component for Suspense fallback
+const ResetPasswordPageLoading = () => (
+  <Dashboard>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  </Dashboard>
+);
+
+// Main component wrapped with Suspense
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordPageLoading />}>
+      <ResetPasswordPageContent />
+    </Suspense>
   );
 }

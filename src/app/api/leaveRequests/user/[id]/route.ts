@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { PrismaClient } from "../../../../../../generated/prisma";
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient();
+// Add this to prevent static optimization of this route
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,

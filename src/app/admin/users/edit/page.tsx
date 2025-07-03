@@ -1,7 +1,7 @@
 'use client';
 
 import { Dashboard } from '@/components/Layout/Dashboard';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -112,7 +112,7 @@ interface Department {
   name: string;
 }
 
-const EditUserPage = () => {
+const EditUserPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = searchParams.get('id');
@@ -810,6 +810,24 @@ const EditUserPage = () => {
         </Form>
       </div>
     </Dashboard>
+  );
+};
+
+// Loading component for Suspense fallback
+const EditUserPageLoading = () => (
+  <Dashboard>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  </Dashboard>
+);
+
+// Main component wrapped with Suspense
+const EditUserPage = () => {
+  return (
+    <Suspense fallback={<EditUserPageLoading />}>
+      <EditUserPageContent />
+    </Suspense>
   );
 };
 

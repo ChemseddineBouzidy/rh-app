@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, LeaveStatus } from '../../../../generated/prisma/client';
+import { LeaveStatus } from '../../../../generated/prisma/client';
+import { prisma } from '@/lib/db';
 
-const prisma = new PrismaClient();
+// Add this to prevent static optimization of this route
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -13,8 +15,8 @@ export async function GET() {
       },
     });
     return NextResponse.json(leaveRequests);
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
 
